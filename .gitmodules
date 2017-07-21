@@ -1,3 +1,6 @@
 [submodule "gsee"]
 	path = gsee
 	url = https://github.com/MaritimeRenewable/gsee.git
+[submodule "synthetic_solar"]
+	path = synthetic_solar
+	url = https://github.com/MaritimeRenewable/synthetic_solar
