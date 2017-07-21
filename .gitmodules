@@ -1,0 +1,3 @@
+[submodule "gsee"]
+	path = gsee
+	url = https://github.com/MaritimeRenewable/gsee.git
