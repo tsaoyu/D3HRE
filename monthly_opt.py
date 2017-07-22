@@ -1,3 +1,5 @@
+import unittest
+
 import pandas as pd
 import numpy as np
 from scipy.optimize import linprog
@@ -148,6 +150,7 @@ class Opt:
         res = linprog(self.cost, A_ub= -A, b_ub= -b,
                       options={"tol": 1e-8, "bland": True})
         return res.x
+
 
 
 
