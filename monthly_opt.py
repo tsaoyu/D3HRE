@@ -4,11 +4,13 @@ import pandas as pd
 import numpy as np
 from scipy.optimize import linprog
 
+from mission_utlities import route_manager
+
 def coordinates_processing(coordinates):
     """
     Process coordinate from OpenCPN xml file to numpy array of [lat, lon] points.
     :param coordinates: string coordinates from OpenCPN
-    :return: array with [lat, lon]
+    :return: (n, 2) array with n way points [lat, lon] 
     """
     str_list = list(map(lambda x: x.split(','), coordinates.split(' ')))
     del str_list[-1]
@@ -26,6 +28,7 @@ def nearest_point(lat_lon):
     lat, lon = lat_lon
     lat_coords = np.arange(-90, 90, dtype=int)
     lon_coords = np.arange(-180, 180, dtype=int)
+
     def find_closest_coordinate(calc_coord, coord_array):
         index = np.abs(coord_array-calc_coord).argmin()
         return coord_array[index]
@@ -39,44 +42,46 @@ SSEradiation = pd.read_table('./renewable/global_radiation.txt',
 SSEradiation.set_index(['Lat', 'Lon'], inplace=True)
 
 SSEwindspeed = pd.read_table('./renewable/10yr_wspd10arpt.txt',
-                             skiprows=7, sep=' ', header = 0, na_values='na')
+                             skiprows=7, sep=' ', header=0, na_values='na')
 SSEwindspeed.set_index(['Lat', 'Lon'], inplace=True)
 
 
-def getSSEsolar(lat_lon, annual=None, eff=None):
+def get_sse_solar(lat_lon, annual=None, eff=None):
     """
     Get SSE solar radiation from database
     :param lat_lon: tuple of float (lat, lon)
     :param annual: optional annual=True to return annual averaged data
+    :param eff: optional efficiency of solar panel if given it will
+            return 12 month solar energy density in W/m^2
     :return: array of 12 months solar radiation at W/m2
     """
     x, y = nearest_point(lat_lon)
-    if annual == True:
-        solar =  SSEradiation.loc[x, y][12] * 1000 / 24
+    if annual:
+        solar = SSEradiation.loc[x, y][12] * 1000 / 24
     # from kW/day to W/hour
     else:
         solar = SSEradiation.loc[x, y][:12].values * 1000 / 24
-
-    if annual != None:
+    if eff:
         solar = eff * solar
 
     return solar
 
 
-def getSSEwind(lat_lon, annual=None, eff=None):
+def get_sse_wind(lat_lon, annual=None, eff=None):
     """
     Get SSE wind speed from database
     :param lat_lon: tuple of float (lat, lon)
     :param annual: optional annual=True to return annual averaged data
+    :param eff: optional efficiency of wind turbine if given it will
+            return 12 month wind energy density in W/m^2
     :return: array of 12 months wind speed m/s
     """
     x, y = nearest_point(lat_lon)
-    if annual == True:
+    if annual:
         wind = SSEwindspeed.loc[x, y][12]
     else:
         wind = SSEwindspeed.loc[x, y][:12].values
-
-    if annual != None:
+    if eff:
         wind = eff * 0.5 * wind ** 3
 
     return wind
@@ -97,7 +102,7 @@ def resource_matrix_handling(A, minimal_resource=None):
     :return: array processed resource matrix
     """
     A = A[~np.isnan(A).any(axis=1)]
-    if minimal_resource != None:
+    if minimal_resource is not None:
         break_cases = (A[:, 0] + A[:, 1] < minimal_resource).sum()
         A = A[~((A[:, 0] + A[:, 1]) < minimal_resource)]
         print("Resource matrix break {t} months".format(t=break_cases))
@@ -137,8 +142,8 @@ class Opt:
         A = np.array([])
         for way_point in self.route:
             resources_at_waypoint = (np.vstack(
-                (self.solar_eff * getSSEsolar(tuple(way_point)),
-                 1 / 2 * self.wind_eff * getSSEwind(tuple(way_point)) ** 3)).T)
+                (self.solar_eff * get_sse_solar(tuple(way_point)),
+                 1 / 2 * self.wind_eff * get_sse_wind(tuple(way_point)) ** 3)).T)
             A = np.append(A, resources_at_waypoint)
         A = A.reshape(-1, 2)
         A = resource_matrix_handling(A, self.minimal_resource)

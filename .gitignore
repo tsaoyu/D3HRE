@@ -1,3 +1,6 @@
+#PyCharm stuff
+/.idea
+
 # Resource Folder
 MERRA2data/
 
