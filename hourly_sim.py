@@ -380,8 +380,6 @@ def download_URL(mission, data_set='solar'):
     #    b ----> End of day insert if a->c is over night
     # c ----> End time of query at a location
     #
-    # d = download_df.groupby('lat_lon').first().reset_index().set_index('utc').resample(
-    #    '1D', closed='right').ffill()
     download_index = pd.concat([a, b, c], axis=1)['lat_lon'].iloc[:, 0].ffill()
     generated_URLs = []
     for start, end, lat_lon in zip(download_index.index[:-1],
