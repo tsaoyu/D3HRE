@@ -37,13 +37,16 @@ def nearest_point(lat_lon):
     return lat_co, lon_co
 
 
-SSEradiation = pd.read_table('./renewable/global_radiation.txt',
-                             skiprows=13, sep=' ', header=0)
-SSEradiation.set_index(['Lat', 'Lon'], inplace=True)
+solar_radiation = pd.read_table('./renewable/global_radiation.txt',
+                             skiprows=13, sep=' ', header=0).drop(
+    ['Lat','Lon'], axis=1).as_matrix().reshape(180, 360, 13)
 
-SSEwindspeed = pd.read_table('./renewable/10yr_wspd10arpt.txt',
-                             skiprows=7, sep=' ', header=0, na_values='na')
-SSEwindspeed.set_index(['Lat', 'Lon'], inplace=True)
+
+
+wind_speed = pd.read_table('./renewable/10yr_wspd10arpt.txt',
+                             skiprows=7, sep=' ', header=0, na_values='na').drop(
+    ['Lat','Lon'], axis=1).as_matrix().reshape(180, 360, 13)
+
 
 
 def get_sse_solar(lat_lon, annual=None, eff=None):
@@ -55,12 +58,12 @@ def get_sse_solar(lat_lon, annual=None, eff=None):
             return 12 month solar energy density in W/m^2
     :return: array of 12 months solar radiation at W/m2
     """
-    x, y = nearest_point(lat_lon)
+    lat, lon = nearest_point(lat_lon)
     if annual:
-        solar = SSEradiation.loc[x, y][12] * 1000 / 24
+        solar = (solar_radiation[lat+90, lon+180, 12]) * 1000 / 24
     # from kW/day to W/hour
     else:
-        solar = SSEradiation.loc[x, y][:12].values * 1000 / 24
+        solar = (solar_radiation[lat+90, lon+180, 0:12])  * 1000 / 24
     if eff:
         solar = eff * solar
 
@@ -76,11 +79,11 @@ def get_sse_wind(lat_lon, annual=None, eff=None):
             return 12 month wind energy density in W/m^2
     :return: array of 12 months wind speed m/s
     """
-    x, y = nearest_point(lat_lon)
+    lat, lon = nearest_point(lat_lon)
     if annual:
-        wind = SSEwindspeed.loc[x, y][12]
+        wind = wind_speed[lat+90, lon+180, 12]
     else:
-        wind = SSEwindspeed.loc[x, y][:12].values
+        wind = wind_speed[lat+90, lon+180, 0:12]
     if eff:
         wind = eff * 0.5 * wind ** 3
 
@@ -185,4 +188,5 @@ class Opt:
 
 
 if __name__ == '__main__':
-    pass
+    print(get_sse_solar((10,10)))
+    print(get_sse_wind((10, 10)))
