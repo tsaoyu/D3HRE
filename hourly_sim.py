@@ -30,8 +30,40 @@ def min_max_model(power, use, battery_capacity):
     return SOC_history
 
 
-def soc_model(power, use, battery_capacity):
-    pass
+def soc_model_fixed_load(power, use, battery_capacity, depth_of_discharge=0.6,
+                         discharge_rate=0.005, battery_eff=0.9, discharge_eff=0.8):
+    DOD = depth_of_discharge
+    power = power.tolist()
+    energy = DOD * battery_capacity
+    waste_history = []
+    unmet_history = []
+    energy_history = []
+    for p in power:
+        if p >= use:
+            energy_new = energy * (1 - discharge_rate) + (p - use) * battery_eff
+            if energy_new < battery_capacity:
+                energy = energy_new
+                waste_history.append(0)
+            else:
+                waste_history.append(p - use)
+            unmet_history.append(0)
+
+        elif p < use:
+            energy_new = energy * (1 - discharge_rate) + (p - use)/discharge_eff
+            if energy_new > (1 - DOD) * battery_capacity:
+                energy = energy_new
+                unmet_history.append(0)
+            elif (use - p)/discharge_eff < energy:
+                energy = energy_new
+                unmet_history.append(0)
+            else:
+                unmet_history.append(use - p)
+            waste_history.append(0)
+        energy_history.append(energy)
+
+    SOC = np.array(energy_history)/battery_capacity
+    return SOC, energy_history, unmet_history, waste_history
+
 
 class Simulation:
     def __init__(self, start_time, route, speed):
@@ -171,9 +203,10 @@ def power_unit_area(start_time, route, speed, power_per_square=150,
     return solar_power, wind_power
 
 
-def temporal_optimization(start_time, route, speed, wind_area, solar_area, use, battery_capacity,
+def temporal_optimization(start_time, route, speed, wind_area, solar_area, use, battery_capacity, depth_of_discharge=0.6,
+                           discharge_rate=0.005, battery_eff=0.9, discharge_eff=0.8,
                           title=0, azim=0, tracking=0, power_coefficient=0.3, cut_in_speed=2, cut_off_speed=15,
-                          technology='csi', system_loss=0.10, angles=None, dataFrame=False
+                          technology='csi', system_loss=0.10, angles=None, dataFrame=False, trace_back=False
                           ):
     """
     Simulation based optimization for
@@ -195,7 +228,9 @@ def temporal_optimization(start_time, route, speed, wind_area, solar_area, use, 
     :param system_loss: float system lost of the system
     :param angles: optional solar angle
     :param dataFrame: optional return dataframe or not
-    :return: list battery energy during the simulation
+    :param trace_back: optional in True give all trace back
+    :return: float lost power supply probability (LPSP)
+    if trace_back option is on then gives LPSP, SOC, energy history, unmet energy history, water history
     """
     # Pack route to immutable object for caching
     route = tuple(route.flatten())
@@ -207,8 +242,14 @@ def temporal_optimization(start_time, route, speed, wind_area, solar_area, use, 
     solar_power = solar_power_unit * solar_area
     wind_power = wind_power_unit * wind_area
     power = solar_power + wind_power
-    battery_energy = min_max_model(power, use, battery_capacity)
-    return battery_energy
+    SOC, energy_history, unmet_history, waste_history = soc_model_fixed_load(power, use, battery_capacity,
+                                                                             depth_of_discharge, discharge_rate,
+                                                                             battery_eff, discharge_eff)
+    LPSP = 1- unmet_history.count(0)/len(energy_history)
+    if trace_back:
+        return  LPSP, SOC, energy_history, unmet_history, waste_history
+    else:
+        return  LPSP
 
 
 class Simulation_synthetic:
