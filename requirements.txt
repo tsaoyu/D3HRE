@@ -1,3 +1,4 @@
+codecov
 Cython==0.26
 dask==0.15.0
 numpy==1.13.0
