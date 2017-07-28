@@ -21,7 +21,7 @@ def froude_number(speed, length):
     return Fr
 
 
-cr_list = np.loadtxt('./cr.txt')
+cr_list = np.loadtxt('./demand/cr.txt')
 cr_points = cr_list.T[:3].T
 cr_values = cr_list.T[3].T / 1000
 cr = interpolate.LinearNDInterpolator(cr_points, cr_values)
@@ -33,7 +33,10 @@ def residual_resistance_coef(slenderness, prismatic_coef, froude_number):
 
 
 class Ship():
-    def __init__(self, length, draught, beam, speed,
+    def __init__(self):
+        self.total_resistance_coef = 0
+
+    def dimension(self, length, draught, beam, speed,
                  slenderness_coefficient, prismatic_coefficient):
         self.length = length
         self.draught = draught
@@ -46,16 +49,19 @@ class Ship():
                                      self.displacement / self.draught)
 
     def resistance(self):
-        total_resistance_coef = frictional_resistance_coef(self.length, self.speed) + \
+        self.total_resistance_coef = frictional_resistance_coef(self.length, self.speed) + \
                                 residual_resistance_coef(self.slenderness_coefficient,
                                                          self.prismatic_coefficient,
                                                          froude_number(self.speed, self.length))
-        RT = 1 / 2 * total_resistance_coef * 1025 * self.surface_area * self.speed ** 2
+        RT = 1 / 2 * self.total_resistance_coef * 1025 * self.surface_area * self.speed ** 2
         return RT
 
     def maximum_deck_area(self, water_plane_coef=0.88):
         AD = self.beam * self.length * water_plane_coef
         return AD
+
+    def get_reynold_number(self):
+        return reynolds_number(self.length, self.speed)
 
     def prop_power(self, sea_margin=0.2):
         PP = (1 + sea_margin) * self.resistance() * self.speed
