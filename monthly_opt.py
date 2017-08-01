@@ -113,7 +113,7 @@ def resource_matrix_handling(A, minimal_resource=None):
     return A
 
 
-def mission_resource_matrix(mission, solar_eff=0.12, wind_eff=0.15):
+def mission_resource_matrix(mission, solar_eff=0.12, wind_eff=0.26):
     mission['lat_lon'] = list(map(tuple, mission[['lat','lon']].values))
     month_index = mission.lat_lon.apply(nearest_point).drop_duplicates().index.month
     solar_resource_matrix = mission.lat_lon.apply(nearest_point).drop_duplicates(
@@ -135,8 +135,7 @@ class Opt:
     Monthly optimization on given route with objective minimize cost of system
     and subjectives in meet flat demand.
     """
-    def __init__(self, route, power_demand, wind_eff=0.26,
-                 solar_eff=0.12, cost=[1, 1], minimal_resource=None):
+    def __init__(self, route, wind_eff=0.26, solar_eff=0.12, cost=[1, 1], minimal_resource=None):
         """
 
         :param route: array of lat,lon with dimension(n, 2)
@@ -153,26 +152,32 @@ class Opt:
             ignore extreme cases of month without total energy under this value
         """
         self.route = route
-        self.power_demand = power_demand
+        self.power_demand = 0
         self.wind_eff = wind_eff
         self.solar_eff = solar_eff
         self.cost = cost
         self.minimal_resource = minimal_resource
 
-    def resource_demand_matrix(self):
+    def resource_demand_matrix(self, zero_drop=True):
         A = np.array([])
         for way_point in self.route:
             resources_at_waypoint = (np.vstack(
-                (self.solar_eff * get_sse_solar(tuple(way_point)),
-                 1 / 2 * self.wind_eff * get_sse_wind(tuple(way_point)) ** 3)).T)
+                (get_sse_solar(tuple(way_point), eff=self.solar_eff),
+                get_sse_wind(tuple(way_point), eff=self.wind_eff))).T)
             A = np.append(A, resources_at_waypoint)
         A = A.reshape(-1, 2)
         A = resource_matrix_handling(A, self.minimal_resource)
+        if zero_drop:
+            violated_cases = np.any(A == 0, axis=1).sum()
+            print('Please be aware there are {v} violated cases that energy is 0'.format(v=violated_cases))
+        A = A[~np.any(A == 0, axis=1)]
         b = self.power_demand * np.ones(A.shape[0])
         return A, b
 
-    def route_based_presizing(self):
+    def route_based_presizing(self, power_demand):
+        self.power_demand = power_demand
         A, b = self.resource_demand_matrix()
+        self.route_resource_matrix = A
         res = linprog(self.cost, A_ub= -A, b_ub= -b,
                       options={"tol": 1e-8, "bland": True})
         return res.x
