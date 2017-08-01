@@ -9,7 +9,7 @@ import xarray as xr
 
 from passwords import *
 from opendap_download.multi_processing_download import DownloadManager
-NUMBER_OF_CONNECTIONS = 6
+NUMBER_OF_CONNECTIONS = 4
 
 
 def hashFor(data):
@@ -259,6 +259,7 @@ def resource_df_download_and_process(mission):
     df['heading'] = heading
     df['Vs'] = df['V2M'] - df['speed']/3.6*np.cos(np.radians(df['heading']))
     df['Us'] = df['U2M'] - df['speed']/3.6*np.sin(np.radians(df['heading']))
+    df['Va'] = np.sqrt(df['Vs'] ** 2 + df['Us'] **2)
     df['apparent_wind_direction'] = np.arctan2(df['Vs'], df['Us'])
     return df
 
