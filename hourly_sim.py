@@ -64,6 +64,90 @@ def soc_model_fixed_load(power, use, battery_capacity, depth_of_discharge=0.6,
     SOC = np.array(energy_history)/battery_capacity
     return SOC, energy_history, unmet_history, waste_history
 
+@lru_cache(maxsize=32)
+def power_unit_area(start_time, route, speed, power_per_square=150,
+                    title=0, azim=0, tracking=0, power_coefficient=0.3, cut_in_speed=2, cut_off_speed=15,
+                    technology='csi', system_loss=0.10, angles=None, dataFrame=False
+                    ):
+    """
+
+    :param start_time: str or Dateindex start date of journey
+    :param route: numpy nd array (n,2) [lat, lon] of way points
+    :param speed: float or list if float is given, it is assumed as constant speed operation mode
+                otherwise, a list of n with averaged speed should be given
+    :param power_per_square: float W/m^2 rated power per squared meter
+    :param title: float degrees title angle of PV panel
+    :param azim: float degrees azim angle of PV panel
+    :param tracking: int 0 1 or 2 0 for no tracking, 1 for one axis, 2 for two axis
+    :param power_coefficient: float power coefficient of wind turbine
+    :param cut_in_speed: float m/s cut in speed of wind turbine
+    :param cut_off_speed: float m/s cut off speed of wind turbine
+    :param technology: optional str 'csi'
+    :param system_loss: float system lost of the system
+    :param angles: optional solar angle
+    :param dataFrame: optional return dataframe or not
+    :return: tuple of Pandas series solar power and wind power with datatime index
+    """
+    route = np.array(route).reshape(-1, 2)
+    # Unpack route to ndarray for route based processing
+    sim = Simulation(start_time, route, speed)
+    sim.sim_wind(1, power_coefficient, cut_in_speed, cut_off_speed)
+    sim.sim_solar(title, azim, tracking, power_per_square, technology, system_loss, angles, dataFrame)
+    solar_power = sim.solar_power
+    wind_power = sim.wind_power
+    return solar_power, wind_power
+
+
+def temporal_optimization(start_time, route, speed, solar_area, wind_area, use, battery_capacity, depth_of_discharge=0.6,
+                           discharge_rate=0.005, battery_eff=0.9, discharge_eff=0.8,title=0, azim=0, tracking=0,
+                          power_coefficient=0.3, cut_in_speed=2, cut_off_speed=15, technology='csi', system_loss=0.10,
+                          angles=None, dataFrame=False, trace_back=False, performance_index=False
+                          ):
+    """
+    Simulation based optimization for
+    :param start_time: str or Dataindex start date of journey
+    :param route: numpy nd array (n,2) [lat, lon] of way points
+    :param speed: float or list if float is given, it is assumed as constant speed operation mode
+                otherwise, a list of n with averaged speed should be given
+    :param wind_area: float area of wind turbine area
+    :param solar_area: float m^2 area of solar panel area
+    :param use: float m^2 load demand of the system
+    :param battery_capacity: float Wh total battery capacity of the renewable energy system
+    :param title: float degrees title angle of PV panel
+    :param azim: float degrees azim angle of PV panel
+    :param tracking: int 0 1 or 2 0 for no tracking, 1 for one axis, 2 for two axis
+    :param power_coefficient: float power coefficient of wind turbine
+    :param cut_in_speed: float m/s cut in speed of wind turbine
+    :param cut_off_speed: float m/s cut off speed of wind turbine
+    :param technology: optional str 'csi'
+    :param system_loss: float system lost of the system
+    :param angles: optional solar angle
+    :param dataFrame: optional return dataframe or not
+    :param trace_back: optional in True give all trace back
+    :return: float lost power supply probability (LPSP)
+    if trace_back option is on then gives LPSP, SOC, energy history, unmet energy history, water history
+    """
+    # Pack route to immutable object for caching
+    route = tuple(route.flatten())
+    solar_power_unit, wind_power_unit = power_unit_area(start_time, route, speed,
+                                                        title=0, azim=0, tracking=0, power_coefficient=0.3,
+                                                        cut_in_speed=2, cut_off_speed=15,
+                                                        technology='csi', system_loss=0.10, angles=None, dataFrame=False
+                                                        )
+    solar_power = solar_power_unit * solar_area
+    wind_power = wind_power_unit * wind_area
+    power = solar_power + wind_power
+    SOC, energy_history, unmet_history, waste_history = soc_model_fixed_load(power, use, battery_capacity,
+                                                                             depth_of_discharge, discharge_rate,
+                                                                             battery_eff, discharge_eff)
+    LPSP = 1- unmet_history.count(0)/len(energy_history)
+    if trace_back:
+        if performance_index:
+            return LPSP, np.array(energy_history), np.array(unmet_history).sum(), np.array(waste_history).sum()
+        return  LPSP, SOC, energy_history, unmet_history, waste_history
+    else:
+        return  LPSP
+
 
 class Simulation:
     def __init__(self, start_time, route, speed):
@@ -125,11 +209,11 @@ class Simulation:
 
         wind_df = self.get_resource_df
         # Apply wind speed to ideal wind turbine model, get power production correction due to speed
-        wind_df['wind_power'] = wind_df.V2.apply(lambda x: power_from_turbine(x, area,
-                                                                              power_coefficient, cut_in_speed,
-                                                                              rated_speed)) - \
+        wind_df['wind_power'] = wind_df.V2.apply(
+            lambda x: power_from_turbine(x, area, power_coefficient, cut_in_speed, rated_speed)) - \
                                 ship_speed_correction(wind_df, area)
-
+        self.wind_power_raw = wind_df.V2.apply(
+            lambda x: power_from_turbine(x, area, power_coefficient, cut_in_speed, rated_speed))
         self.wind_power = wind_df.wind_power
         pass
 
@@ -169,87 +253,7 @@ class Simulation:
         return self.battery_energy
 
 
-@lru_cache(maxsize=32)
-def power_unit_area(start_time, route, speed, power_per_square=150,
-                    title=0, azim=0, tracking=0, power_coefficient=0.3, cut_in_speed=2, cut_off_speed=15,
-                    technology='csi', system_loss=0.10, angles=None, dataFrame=False
-                    ):
-    """
 
-    :param start_time: str or Dateindex start date of journey
-    :param route: numpy nd array (n,2) [lat, lon] of way points
-    :param speed: float or list if float is given, it is assumed as constant speed operation mode
-                otherwise, a list of n with averaged speed should be given
-    :param power_per_square: float W/m^2 rated power per squared meter
-    :param title: float degrees title angle of PV panel
-    :param azim: float degrees azim angle of PV panel
-    :param tracking: int 0 1 or 2 0 for no tracking, 1 for one axis, 2 for two axis
-    :param power_coefficient: float power coefficient of wind turbine
-    :param cut_in_speed: float m/s cut in speed of wind turbine
-    :param cut_off_speed: float m/s cut off speed of wind turbine
-    :param technology: optional str 'csi'
-    :param system_loss: float system lost of the system
-    :param angles: optional solar angle
-    :param dataFrame: optional return dataframe or not
-    :return: tuple of Pandas series solar power and wind power with datatime index
-    """
-    route = np.array(route).reshape(-1, 2)
-    # Unpack route to ndarray for route based processing
-    sim = Simulation(start_time, route, speed)
-    sim.sim_wind(1, power_coefficient, cut_in_speed, cut_off_speed)
-    sim.sim_solar(title, azim, tracking, power_per_square, technology, system_loss, angles, dataFrame)
-    solar_power = sim.solar_power
-    wind_power = sim.wind_power
-    return solar_power, wind_power
-
-
-def temporal_optimization(start_time, route, speed, wind_area, solar_area, use, battery_capacity, depth_of_discharge=0.6,
-                           discharge_rate=0.005, battery_eff=0.9, discharge_eff=0.8,
-                          title=0, azim=0, tracking=0, power_coefficient=0.3, cut_in_speed=2, cut_off_speed=15,
-                          technology='csi', system_loss=0.10, angles=None, dataFrame=False, trace_back=False
-                          ):
-    """
-    Simulation based optimization for
-    :param start_time: str or Dataindex start date of journey
-    :param route: numpy nd array (n,2) [lat, lon] of way points
-    :param speed: float or list if float is given, it is assumed as constant speed operation mode
-                otherwise, a list of n with averaged speed should be given
-    :param wind_area: float area of wind turbine area
-    :param solar_area: float m^2 area of solar panel area
-    :param use: float m^2 load demand of the system
-    :param battery_capacity: float Wh total battery capacity of the renewable energy system
-    :param title: float degrees title angle of PV panel
-    :param azim: float degrees azim angle of PV panel
-    :param tracking: int 0 1 or 2 0 for no tracking, 1 for one axis, 2 for two axis
-    :param power_coefficient: float power coefficient of wind turbine
-    :param cut_in_speed: float m/s cut in speed of wind turbine
-    :param cut_off_speed: float m/s cut off speed of wind turbine
-    :param technology: optional str 'csi'
-    :param system_loss: float system lost of the system
-    :param angles: optional solar angle
-    :param dataFrame: optional return dataframe or not
-    :param trace_back: optional in True give all trace back
-    :return: float lost power supply probability (LPSP)
-    if trace_back option is on then gives LPSP, SOC, energy history, unmet energy history, water history
-    """
-    # Pack route to immutable object for caching
-    route = tuple(route.flatten())
-    solar_power_unit, wind_power_unit = power_unit_area(start_time, route, speed,
-                                                        title=0, azim=0, tracking=0, power_coefficient=0.3,
-                                                        cut_in_speed=2, cut_off_speed=15,
-                                                        technology='csi', system_loss=0.10, angles=None, dataFrame=False
-                                                        )
-    solar_power = solar_power_unit * solar_area
-    wind_power = wind_power_unit * wind_area
-    power = solar_power + wind_power
-    SOC, energy_history, unmet_history, waste_history = soc_model_fixed_load(power, use, battery_capacity,
-                                                                             depth_of_discharge, discharge_rate,
-                                                                             battery_eff, discharge_eff)
-    LPSP = 1- unmet_history.count(0)/len(energy_history)
-    if trace_back:
-        return  LPSP, SOC, energy_history, unmet_history, waste_history
-    else:
-        return  LPSP
 
 
 class Simulation_synthetic:
