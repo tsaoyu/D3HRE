@@ -113,7 +113,7 @@ def generate_single_download_link(start, end, lat_lon, data_set=None):
     return url
 
 
-def download_URL(mission, data_set='solar'):
+def download_URL(mission, data_set='solar', debug=False):
     def nearest_point(lat_lon):
         """
         The source for this formula is in the MERRA2
@@ -150,13 +150,15 @@ def download_URL(mission, data_set='solar'):
     # c ----> End time of query at a location
     #
     download_index = pd.concat([a, b, c], axis=1)['lat_lon'].iloc[:, 0].ffill()
-    generated_URLs = []
-    for start, end, lat_lon in zip(download_index.index[:-1],
-                                   download_index.index[1:],
-                                   download_index[1:]):
-        generated_URLs.append(generate_single_download_link(start, end, lat_lon, data_set))
-
-    return generated_URLs
+    if debug:
+        return download_index.index[0], download_index.index[-1]
+    else:
+        generated_URLs = []
+        for start, end, lat_lon in zip(download_index.index[:-1],
+                                     download_index.index[1:],
+                                     download_index[1:]):
+            generated_URLs.append(generate_single_download_link(start, end, lat_lon, data_set))
+        return generated_URLs
 
 
 def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER_OF_CONNECTIONS):
@@ -206,10 +208,7 @@ def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER
             resource_df.to_pickle(file_name)
 
         resource_df = pd.read_pickle(file_name)
-
     return resource_df
-
-
 
 
 def calculate_initial_compass_bearing(pointA, pointB):
@@ -256,11 +255,12 @@ def resource_df_download_and_process(mission):
     for a, b in zip(location_list[:-1], location_list[1:]):
         heading.append(calculate_initial_compass_bearing(a, b))
     heading.append(heading[-1])
+    # Becuase the platform do not know what the next point to go after reach the
+    # last way point we let it stay the same the second last one
     df['heading'] = heading
     df['Vs'] = df['V2M'] - df['speed']/3.6*np.cos(np.radians(df['heading']))
     df['Us'] = df['U2M'] - df['speed']/3.6*np.sin(np.radians(df['heading']))
+    df['wind_direction'] = np.arctan2(df['V2M'], df['U2M'])
     df['Va'] = np.sqrt(df['Vs'] ** 2 + df['Us'] **2)
     df['apparent_wind_direction'] = np.arctan2(df['Vs'], df['Us'])
     return df
-
-

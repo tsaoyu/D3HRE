@@ -65,7 +65,7 @@ def soc_model_fixed_load(power, use, battery_capacity, depth_of_discharge=0.6,
     return SOC, energy_history, unmet_history, waste_history
 
 @lru_cache(maxsize=32)
-def power_unit_area(start_time, route, speed, power_per_square=150,
+def power_unit_area(start_time, route, speed, power_per_square=140,
                     title=0, azim=0, tracking=0, power_coefficient=0.3, cut_in_speed=2, cut_off_speed=15,
                     technology='csi', system_loss=0.10, angles=None, dataFrame=False
                     ):
@@ -279,6 +279,9 @@ class Simulation_synthetic:
         df['solar_synthetic_power'] = pv.run_plant_model_location(df, title, azim, tracking, capacity,
                                                                   technology, system_loss, angles, dataFrame, **kwargs)
         return df
+
+
+
 
 
 if __name__ == '__main__':
