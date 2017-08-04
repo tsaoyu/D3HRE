@@ -248,19 +248,37 @@ def resource_df_download_and_process(mission):
     resource_df = resource_df_download(mission)
     df = pd.concat([mission, resource_df], axis=1).bfill()
     df['temperature'] = df.T2M - 273
-    df['V2'] = np.sqrt(df.V2M ** 2 + df.U2M ** 2)
+
     df['kt'] = df.SWGDN / df.SWTDN
+
+    df['V2'] = np.sqrt(df.V2M ** 2 + df.U2M ** 2)
+    df['true_wind_direction'] = (np.degrees(np.arctan2(df['U2M'], df['V2M']))
+                                 + 360) % 360
+
     location_list = [tuple(x) for x in df[['lat','lon']].values]
     heading = []
     for a, b in zip(location_list[:-1], location_list[1:]):
         heading.append(calculate_initial_compass_bearing(a, b))
     heading.append(heading[-1])
-    # Becuase the platform do not know what the next point to go after reach the
+    # Because the platform do not know what the next point to go after reach the
     # last way point we let it stay the same the second last one
+
     df['heading'] = heading
-    df['Vs'] = df['V2M'] - df['speed']/3.6*np.cos(np.radians(df['heading']))
-    df['Us'] = df['U2M'] - df['speed']/3.6*np.sin(np.radians(df['heading']))
-    df['wind_direction'] = np.arctan2(df['V2M'], df['U2M'])
-    df['Va'] = np.sqrt(df['Vs'] ** 2 + df['Us'] **2)
-    df['apparent_wind_direction'] = np.arctan2(df['Vs'], df['Us'])
+    # apparent wind                 V_{app} = [Uapp,   Vapp] :: Va
+    # true wind at 2 meters height V_{true} = [U2M,     V2M] :: V2
+    # ship speed vector            V_{ship} = [Uship, Vship] :: Vs
+    #
+    #                 V_{app} = V_{true} + (- V_{s})
+    #
+    V_s = df['speed']/3.6  # ship speed in DataFrame unit of km/h
+
+    U_ship = V_s * np.sin(np.radians(df['heading']))
+    V_ship = V_s * np.cos(np.radians(df['heading']))
+
+    U_app = df['U2M'] - U_ship
+    V_app = df['V2M'] - V_ship
+
+    df['Va'] = np.sqrt(U_app ** 2 + V_app **2)
+    df['apparent_wind_direction'] = (np.degrees(np.arctan2(U_app, V_app)) +
+                                     360) % 360
     return df

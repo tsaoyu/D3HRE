@@ -2,6 +2,7 @@
 # but it give programmer more confidence that it can make sure some functions works as expected.
 
 import pytest
+import numpy as np
 import os, sys
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir))
 
@@ -55,3 +56,9 @@ def test_bearing_angle():
     assert abs(route_based_download.calculate_initial_compass_bearing(pointA, pointD)
                - 92.4904987465253) < 0.0001
 
+for a in range(0,360,45):
+    alpha = np.radians(a)
+    print(a, ':', 1*np.sin(alpha),1*np.cos(alpha))
+
+def test_wind_angles():
+    pass
