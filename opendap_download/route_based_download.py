@@ -9,7 +9,7 @@ import xarray as xr
 
 from passwords import *
 from opendap_download.multi_processing_download import DownloadManager
-NUMBER_OF_CONNECTIONS = 6
+NUMBER_OF_CONNECTIONS = 4
 
 
 def hashFor(data):
@@ -113,7 +113,7 @@ def generate_single_download_link(start, end, lat_lon, data_set=None):
     return url
 
 
-def download_URL(mission, data_set='solar'):
+def download_URL(mission, data_set='solar', debug=False):
     def nearest_point(lat_lon):
         """
         The source for this formula is in the MERRA2
@@ -150,13 +150,15 @@ def download_URL(mission, data_set='solar'):
     # c ----> End time of query at a location
     #
     download_index = pd.concat([a, b, c], axis=1)['lat_lon'].iloc[:, 0].ffill()
-    generated_URLs = []
-    for start, end, lat_lon in zip(download_index.index[:-1],
-                                   download_index.index[1:],
-                                   download_index[1:]):
-        generated_URLs.append(generate_single_download_link(start, end, lat_lon, data_set))
-
-    return generated_URLs
+    if debug:
+        return download_index.index[0], download_index.index[-1]
+    else:
+        generated_URLs = []
+        for start, end, lat_lon in zip(download_index.index[:-1],
+                                     download_index.index[1:],
+                                     download_index[1:]):
+            generated_URLs.append(generate_single_download_link(start, end, lat_lon, data_set))
+        return generated_URLs
 
 
 def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER_OF_CONNECTIONS):
@@ -206,10 +208,7 @@ def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER
             resource_df.to_pickle(file_name)
 
         resource_df = pd.read_pickle(file_name)
-
     return resource_df
-
-
 
 
 def calculate_initial_compass_bearing(pointA, pointB):
@@ -249,17 +248,37 @@ def resource_df_download_and_process(mission):
     resource_df = resource_df_download(mission)
     df = pd.concat([mission, resource_df], axis=1).bfill()
     df['temperature'] = df.T2M - 273
-    df['V2'] = np.sqrt(df.V2M ** 2 + df.U2M ** 2)
+
     df['kt'] = df.SWGDN / df.SWTDN
+
+    df['V2'] = np.sqrt(df.V2M ** 2 + df.U2M ** 2)
+    df['true_wind_direction'] = (np.degrees(np.arctan2(df['U2M'], df['V2M']))
+                                 + 360) % 360
+
     location_list = [tuple(x) for x in df[['lat','lon']].values]
     heading = []
     for a, b in zip(location_list[:-1], location_list[1:]):
         heading.append(calculate_initial_compass_bearing(a, b))
     heading.append(heading[-1])
+    # Because the platform do not know what the next point to go after reach the
+    # last way point we let it stay the same the second last one
+
     df['heading'] = heading
-    df['Vs'] = df['V2M'] - df['speed']/3.6*np.cos(np.radians(df['heading']))
-    df['Us'] = df['U2M'] - df['speed']/3.6*np.sin(np.radians(df['heading']))
-    df['apparent_wind_direction'] = np.arctan2(df['Vs'], df['Us'])
+    # apparent wind                 V_{app} = [Uapp,   Vapp] :: Va
+    # true wind at 2 meters height V_{true} = [U2M,     V2M] :: V2
+    # ship speed vector            V_{ship} = [Uship, Vship] :: Vs
+    #
+    #                 V_{app} = V_{true} + (- V_{s})
+    #
+    V_s = df['speed']/3.6  # ship speed in DataFrame unit of km/h
+
+    U_ship = V_s * np.sin(np.radians(df['heading']))
+    V_ship = V_s * np.cos(np.radians(df['heading']))
+
+    U_app = df['U2M'] - U_ship
+    V_app = df['V2M'] - V_ship
+
+    df['Va'] = np.sqrt(U_app ** 2 + V_app **2)
+    df['apparent_wind_direction'] = (np.degrees(np.arctan2(U_app, V_app)) +
+                                     360) % 360
     return df
-
-
