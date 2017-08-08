@@ -3,7 +3,9 @@ from datetime import timedelta
 
 import numpy as np
 import pandas as pd
+import nvector as nv
 from math import radians, cos, sin, asin, sqrt
+
 
 def opencpn_coordinates_processing(coordinates: str) -> np.ndarray:
     """
@@ -16,6 +18,7 @@ def opencpn_coordinates_processing(coordinates: str) -> np.ndarray:
     del str_list[-1]
     route = np.array(str_list, dtype=float).T[:2].T
     return route
+
 
 def haversine(lon1, lat1, lon2, lat2):
     """
@@ -36,7 +39,6 @@ def haversine(lon1, lat1, lon2, lat2):
     c = 2 * asin(sqrt(a))
     r = 6371  # Radius of earth in kilometers. Use 3956 for miles
     return c * r
-
 
 
 def distance_between_waypoints(way_points):
@@ -80,43 +82,80 @@ def position_dataframe(start_date, way_points, speed):
     :return: pandas dataFrame hourly indexed position
     """
     timeindex = journey_timestamp_generator(start_date, way_points, speed)
-    latTS = pd.Series(way_points[:,0], index=timeindex).resample('1H') \
-        .mean().interpolate(method='pchip')
-    lonTS = pd.Series(way_points[:,1], index=timeindex).resample('1H') \
-        .mean().interpolate(method='pchip')
+    latTS = pd.Series(way_points[:, 0], index=timeindex).resample('1H').mean()
+    lonTS = pd.Series(way_points[:, 1], index=timeindex).resample('1H').mean()
+
+    # A custom interpolation to deal with singular angle in 180 lon
+    lTs = latTS.copy()
+    x = lTs.isnull().reset_index(name='null').reset_index().rename(columns={"level_0": "order"})
+    x['block'] = (x['null'].shift(1) != x['null']).astype(int).cumsum()
+    block_to_fill = x[x['null']].groupby('block')['order'].apply(np.array)
+
+    def find_start_and_end_location(block_index):
+        start_index = block_index[0] - 1
+        end_index = block_index[-1] + 1
+        lat1 = latTS.iloc[start_index]
+        lon1 = lonTS.iloc[start_index]
+        lat2 = latTS.iloc[end_index]
+        lon2 = lonTS.iloc[end_index]
+        n = (end_index - start_index)
+        lat_lon1 = lat1, lon1
+        lat_lon2 = lat2, lon2
+        return [lat_lon1, lat_lon2, n]
+
+    def way_points_interp(location_block):
+        lat_lon1 = location_block[0]
+        lat_lon2 = location_block[1]
+        n = location_block[2]
+        wgs84 = nv.FrameE(name='WGS84')
+        lat1, lon1 = lat_lon1
+        lat2, lon2 = lat_lon2
+        n_EB_E_t0 = wgs84.GeoPoint(lat1, lon1, degrees=True).to_nvector()
+        n_EB_E_t1 = wgs84.GeoPoint(lat2, lon2, degrees=True).to_nvector()
+        path = nv.GeoPath(n_EB_E_t0, n_EB_E_t1)
+        interpolate_coor = [[lat1, lon1]]
+        piece_fraction = 1 / n
+        for n in range(n - 1):
+            g_EB_E_ti = path.interpolate(piece_fraction * (n + 1)).to_geo_point()
+            interpolate_coor.append([g_EB_E_ti.latitude_deg[0], g_EB_E_ti.longitude_deg[0]])
+        return interpolate_coor
+
+    way_interpolated = np.array([])
+    for block in block_to_fill:
+        way_interp = way_points_interp(find_start_and_end_location(block))
+        way_interpolated = np.append(way_interpolated, way_interp)
+
+    way_interpolated = np.append(way_interpolated, [latTS.iloc[-1], lonTS.iloc[-1]])
+    locations = way_interpolated.reshape(-1, 2)
+
+    mission = pd.DataFrame(data=locations, index=latTS.index, columns=['lat', 'lon'])
+
     if isinstance(speed, int) or isinstance(speed, float):
         speedTS = speed
     else:
         speed = np.append(speed, speed[-1])
-        speedTS = pd.Series(speed, index=timeindex).resample('1H') \
-            .mean().ffill()
+        speedTS = pd.Series(speed, index=timeindex).resample('1H').mean()
 
-    items = [
-        ('lat', latTS),
-        ('lon', lonTS),
-        ('speed', speedTS)
-    ]
+    mission['speed'] = speedTS
 
-    mission = pd.DataFrame.from_items(items)
-    return mission
-
-
-def timezone_alignment(mission):
-    """
-    Convert UTC time into local time zone of a mission dataframe
-    :param mission: with time index in UTC and longitude information
-    :return: pandas Dataframe with additional local time column
-    """
-    # get the time index and longitude from the mission
-    index = mission.index
-    lon = mission.lon
-    # map longitude difference into time difference
-    timediff = np.floor(lon / 180 * 12)
+    time_diff = np.floor(mission.lon / 180 * 12)
     # time difference into timedelta
-    tdiff = timediff.map(lambda x: timedelta(hours=x))
-    local_time = index + tdiff
+    t_diff = time_diff.map(lambda x: timedelta(hours=x))
+    local_time = mission.index + t_diff
     mission['local_time'] = local_time
+
     return mission
+
+
+def get_position_df(start_time, route, speed):
+    if type(start_time) == str:
+        start_time = pd.Timestamp(start_time)
+    else:
+        pass
+    position_df = position_dataframe(start_time, route, speed)
+    return position_df
+
+
 
 
 def nearest_point(lat_lon):
@@ -160,17 +199,6 @@ def hashFor(data):
     hashId.update(repr(data).encode('utf-8'))
     return hashId.hexdigest()
 
-
-
-def get_position_df(start_time, route, speed):
-    if type(start_time) == str:
-        start_time = pd.Timestamp(start_time)
-    else:
-        pass
-    position_df = position_dataframe(start_time, route, speed).pipe(timezone_alignment)
-    return position_df
-
-
 class Mission():
 
     def __init__(self, start_time, route, speed):
@@ -182,22 +210,22 @@ class Mission():
     def generate_more(self):
         pass
 
-
 if __name__ == '__main__':
-
-    route1 = opencpn_coordinates_processing(
-        "50.1871,26.1087,0. 52.5835,26.431,0. 54.1412,26.1087,0. 55.9985,26.5919,0. "
-        "57.017,25.9472,0. 57.9157,24.8105,0. 60.3721,23.5535,0. 61.091,20.4993,0. 59.054,"
-        "18.1817,0. 56.6575,16.4085,0. 52.5835,14.445,0. 49.4082,13.0484,0. 45.3941,11.937"
-        ",0. 43.8364,12.23,0. 41.6197,15.1402,0. 39.8823,18.2955,0. 37.9651,21.7288,"
-        "0. 36.1677,24.5928,0. 35.0294,26.431,0. 32.8726,29.2385,0. 30.7158,32.7302,"
-        "0. 26.7616,33.8818,0. 20.7705,34.8216,0. 15.678,35.2631,0. 11.4841,37.3867,"
-        "0. 6.99077,38.0029,0. 2.55731,37.6243,0. -1.27704,36.6211,0. -7.50785,35.7021,"
-        "0. -10.9228,35.0672,0. -17.4532,34.8708,0. -24.8223,34.8708,0. -30.9333,34.4272,"
-        "0. -38.1227,34.1797,0. -46.9297,33.483,0. -52.142,33.0321,0. -58.4927,32.4779,0."
-        " -64.4838,32.0727,0. -70.0556,31.8694,0. -75.3278,31.8694,0. -78.6829,31.4614,0. "
-        "-81.3789,31.4103,0. ")
-
-    mission1 = get_position_df('2014-01-01', route1, 2)
-    print(mission1.head())
-    print(hashFor(mission1)[0:7])
+    test_route = np.array(
+    [   [9.20628817, 171.58565184],
+        [9.48566359, 174.60574911],
+        [9.95078073, 176.68206597],
+        [10.69358, 178.94713892],
+        [11.06430687, -176.90022735],
+        [10.87900106, -172.27570342],
+        [9.95078073, -168.97247204],
+        [9.67178793, -166.89615517],
+        [8.92669178, -164.53670418],
+        [8.36686209, -163.12103359],
+        [7.61917834, -161.61098496],
+        [7.05755065, -160.66720457],
+        [6.30766145, -159.15715593],
+        [5.93230149, -158.1189975],
+        [-1.60710319, -156.04268063]])
+    test_mission = get_position_df('2014-01-01', test_route, 2)
+    print(hashFor(test_mission)[:7])
