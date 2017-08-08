@@ -8,5 +8,5 @@ python:
 # command to install dependencies
 install: "pip install -r requirements.txt"
 # command to run tests
-script: pytest ./tests/
+script: pytest --cov=. ./tests/
 after_success: codecov
