@@ -282,3 +282,6 @@ def resource_df_download_and_process(mission):
     df['apparent_wind_direction'] = (np.degrees(np.arctan2(U_app, V_app)) +
                                      360) % 360
     return df
+
+if __name__ == '__main__':
+    pass
