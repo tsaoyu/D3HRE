@@ -1,5 +1,3 @@
-pytest
-pytest-cov
 numpy
 scipy
 pandas
@@ -12,3 +10,6 @@ gpxpy
 requests
 pygmo
 nvector
+pytest
+pytest-cov
+codecov
