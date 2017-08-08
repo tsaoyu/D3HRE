@@ -61,7 +61,11 @@ def soc_model_fixed_load(power, use, battery_capacity, depth_of_discharge=0.6,
             waste_history.append(0)
         energy_history.append(energy)
 
-    SOC = np.array(energy_history)/battery_capacity
+    if not battery_capacity:
+        SOC = np.array(energy_history)/battery_capacity
+    else:
+        # Zero battery size selected, energy history is returned instead
+        SOC = np.array(energy_history)
     return SOC, energy_history, unmet_history, waste_history
 
 @lru_cache(maxsize=32)

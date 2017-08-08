@@ -63,6 +63,6 @@ class Ship():
     def get_reynold_number(self):
         return reynolds_number(self.length, self.speed)
 
-    def prop_power(self, sea_margin=0.2):
-        PP = (1 + sea_margin) * self.resistance() * self.speed
+    def prop_power(self, propulsion_eff=0.7, sea_margin=0.2):
+        PP = (1 + sea_margin) * self.resistance() * self.speed/propulsion_eff
         return PP
