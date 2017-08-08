@@ -8,5 +8,5 @@ python:
 # command to install dependencies
 install: "pip install -r requirements.txt"
 # command to run tests
-script: coverage run monthly_opt.py
+script: pytest ./tests/
 after_success: codecov
