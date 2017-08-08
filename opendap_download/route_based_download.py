@@ -9,7 +9,7 @@ import xarray as xr
 
 from passwords import *
 from opendap_download.multi_processing_download import DownloadManager
-NUMBER_OF_CONNECTIONS = 4
+NUMBER_OF_CONNECTIONS = 6
 
 
 def hashFor(data):
@@ -192,11 +192,37 @@ def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER
             print('Compact data not found, automatic processing starting ...')
             wind_files = sorted(glob.glob(folder + '/download_wind/MERRA*'))
             # Sort file to make sure time is aligned
-            wind_xdata = xr.open_mfdataset(wind_files, concat_dim='time')
+            file_size = np.array([os.path.getsize(wind_file) for wind_file in wind_files])
+            corrupted_files = (file_size < 60000).sum()
+            if corrupted_files == 0:
+                print("Wind data file completeness check pass")
+            else:
+                print("Some wind data corrupted, redownload start")
+                download_manager.download_path = folder + '/download_wind'
+                URLS = download_URL(mission, data_set='wind')
+                url = []
+                for url_index in np.where(file_size<60000)[0].tolist():
+                    url.append(URLS[url_index])
+                download_manager.download_urls = url
+                download_manager.start_download(n)
+            wind_xdata = xr.open_mfdataset(wind_files, concat_dim='time',autoclose=True )
             wind_df = wind_xdata.to_dataframe()
 
             solar_files = sorted(glob.glob(folder + '/download_solar/MERRA*'))
-            solar_xdata = xr.open_mfdataset(solar_files, concat_dim='time')
+            file_size = np.array([os.path.getsize(solar_file) for solar_file in solar_files])
+            corrupted_files = (file_size < 20000).sum()
+            if corrupted_files == 0:
+                print("Solar data file completeness check pass")
+            else:
+                print("Some solar data corrupted, redownload start")
+                download_manager.download_path = folder + '/download_solar'
+                URLS = download_URL(mission, data_set='solar')
+                url = []
+                for url_index in np.where(file_size<20000)[0].tolist():
+                    url.append(URLS[url_index])
+                download_manager.download_urls = url
+                download_manager.start_download(n)
+            solar_xdata = xr.open_mfdataset(solar_files, concat_dim='time',autoclose=True )
             solar_df = solar_xdata.to_dataframe()
 
             resource_df = pd.concat([solar_df, wind_df], axis=1)
