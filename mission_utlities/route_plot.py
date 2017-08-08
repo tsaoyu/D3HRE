@@ -1,4 +1,3 @@
-
 import cartopy
 
 import numpy as np
@@ -31,8 +30,6 @@ def plot_route(route, save=False):
     plt.show()
     if save:
         plt.savefig('../data/Figures/route' + str(route[0, 0]) + '.pdf', format='pdf')
-
-
 
 
 def plot_solar_map(resource_df):
