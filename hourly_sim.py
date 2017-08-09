@@ -19,54 +19,83 @@ def full_day_cut(df):
 
 
 def min_max_model(power, use, battery_capacity):
+    """
+    Minimal maximum battery model
+    :param power: Pandas TimeSeries of total power from renewable system
+    :param use: float unit W fixed load of the power system
+    :param battery_capacity: float unit Wh battery capacity
+    :return: list energy history in battery
+    """
     power = power.tolist()
-    SOC = 0
-    SOC_history = []
+    energy = 0
+    energy_history = []
     for p in power:
-        SOC = min(battery_capacity,
-                  max(0, SOC + (p - use) * 1))
-        SOC_history.append(SOC)
+        energy = min(battery_capacity, max(0, energy + (p - use) * 1))
+        energy_history.append(energy)
 
-    return SOC_history
+    return energy_history
 
 
 def soc_model_fixed_load(power, use, battery_capacity, depth_of_discharge=0.6,
                          discharge_rate=0.005, battery_eff=0.9, discharge_eff=0.8):
+    """
+    Battery state of charge model with fixed load.
+    :param power: Pandas TimeSeries of total power from renewable system
+    :param use: float unit W fixed load of the power system
+    :param battery_capacity: float unit Wh battery capacity
+    :param depth_of_discharge: float 0 to 1 maximum allowed discharge depth
+    :param discharge_rate: self discharge rate
+    :param battery_eff: optional 0 to 1 battery energy store efficiency default 0.9
+    :param discharge_eff: battery discharge efficiency 0 to 1 default 0.8
+    :return: tuple SOC: state of charge, energy history: E in battery,
+    unmet_history: unmet energy history, waste_history: waste energy history
+    """
     DOD = depth_of_discharge
     power = power.tolist()
     energy = DOD * battery_capacity
+    use_history = []
     waste_history = []
     unmet_history = []
     energy_history = []
+    energy = 0
     for p in power:
         if p >= use:
+            use_history.append(use)
+            unmet_history.append(0)
             energy_new = energy * (1 - discharge_rate) + (p - use) * battery_eff
             if energy_new < battery_capacity:
-                energy = energy_new
+                energy = energy_new  # battery energy got update
                 waste_history.append(0)
             else:
                 waste_history.append(p - use)
-            unmet_history.append(0)
+                energy = energy
 
         elif p < use:
-            energy_new = energy * (1 - discharge_rate) + (p - use)/discharge_eff
+            energy_new = energy * (1 - discharge_rate) + (p - use) / discharge_eff
             if energy_new > (1 - DOD) * battery_capacity:
                 energy = energy_new
                 unmet_history.append(0)
-            elif (use - p)/discharge_eff < energy:
-                energy = energy_new
-                unmet_history.append(0)
+                waste_history.append(0)
+                use_history.append(use)
+            elif energy * (1 - discharge_rate) + p * battery_eff < battery_capacity:
+                energy = energy * (1 - discharge_rate) + p * battery_eff
+                unmet_history.append(use - p)
+                use_history.append(0)
+                waste_history.append(0)
             else:
                 unmet_history.append(use - p)
-            waste_history.append(0)
+                use_history.append(0)
+                waste_history.append(p)
+                energy = energy
+
         energy_history.append(energy)
 
     if not battery_capacity:
-        SOC = np.array(energy_history)/battery_capacity
+        SOC = np.array(energy_history) / battery_capacity
     else:
         # Zero battery size selected, energy history is returned instead
         SOC = np.array(energy_history)
-    return SOC, energy_history, unmet_history, waste_history
+    return SOC, energy_history, unmet_history, waste_history, use_history
 
 @lru_cache(maxsize=32)
 def power_unit_area(start_time, route, speed, power_per_square=140,
@@ -141,9 +170,9 @@ def temporal_optimization(start_time, route, speed, solar_area, wind_area, use, 
     solar_power = solar_power_unit * solar_area
     wind_power = wind_power_unit * wind_area
     power = solar_power + wind_power
-    SOC, energy_history, unmet_history, waste_history = soc_model_fixed_load(power, use, battery_capacity,
-                                                                             depth_of_discharge, discharge_rate,
-                                                                             battery_eff, discharge_eff)
+    SOC, energy_history, unmet_history, waste_history, use_history =\
+        soc_model_fixed_load(power, use, battery_capacity, depth_of_discharge,
+                             discharge_rate, battery_eff, discharge_eff)
     LPSP = 1- unmet_history.count(0)/len(energy_history)
     if trace_back:
         if performance_index:
@@ -257,9 +286,6 @@ class Simulation:
         return self.battery_energy
 
 
-
-
-
 class Simulation_synthetic:
     def __init__(self, start_time, route, speed):
         self.start_time = start_time
@@ -285,20 +311,25 @@ class Simulation_synthetic:
         return df
 
 
-
-
-
 if __name__ == '__main__':
-    route1 = route_manager.opencpn_coordinates_processing(
-        "50.1871,26.1087,0. 52.5835,26.431,0. 54.1412,26.1087,0. 55.9985,26.5919,0. 57.017,25.9472,0. 57.9157,24.8105,0. 60.3721,23.5535,0. 61.091,20.4993,0. 59.054,18.1817,0. 56.6575,16.4085,0. 52.5835,14.445,0. 49.4082,13.0484,0. 45.3941,11.937,0. 43.8364,12.23,0. 41.6197,15.1402,0. 39.8823,18.2955,0. 37.9651,21.7288,0. 36.1677,24.5928,0. 35.0294,26.431,0. 32.8726,29.2385,0. 30.7158,32.7302,0. 26.7616,33.8818,0. 20.7705,34.8216,0. 15.678,35.2631,0. 11.4841,37.3867,0. 6.99077,38.0029,0. 2.55731,37.6243,0. -1.27704,36.6211,0. -7.50785,35.7021,0. -10.9228,35.0672,0. -17.4532,34.8708,0. -24.8223,34.8708,0. -30.9333,34.4272,0. -38.1227,34.1797,0. -46.9297,33.483,0. -52.142,33.0321,0. -58.4927,32.4779,0. -64.4838,32.0727,0. -70.0556,31.8694,0. -75.3278,31.8694,0. -78.6829,31.4614,0. -81.3789,31.4103,0. ")
-    route2 = route_manager.opencpn_coordinates_processing(
-        "-69.4565,20.7236,0. -68.3182,21.8401,0. -67.4195,23.4436,0. -66.0415,25.2989,0. -64.7235,26.7525,0. -63.5851,28.2932,0. -61.6081,29.7599,0. -59.2715,31.2055,0. -56.5156,33.1325,0. -54.4786,34.2788,0. -52.7411,35.0672,0. -50.2248,36.1388,0. -47.5288,37.196,0. -45.4319,37.8139,0. -42.1368,39.2201,0. -38.6619,40.2795,0. -36.8046,41.0972,0. -33.5095,42.2162,0. -30.7536,43.0974,0. -28.5368,43.9229,0. -25.721,44.7372,0. -23.3844,45.624,0. -20.928,46.4144,0. -17.6928,47.1936,0. -14.877,47.7202,0. -12.5404,48.0417,0. -9.84439,48.7181,0. -6.90872,49.1902,0. -3.7334,49.89,0. -1.39685,50.7696,0.")
-    route3 = route_manager.opencpn_coordinates_processing(
-        "-37.7862,52.9074,0. -39.8625,52.1032,0. -40.7119,51.4021,0. -41.8444,50.1489,0. -42.3163,49.0479,0. -43.0713,47.8587,0. -43.732,46.6415,0. -44.2983,45.2637,0. -44.6758,44.1232,0. -44.7702,43.2359,0. -44.7702,41.9857,0. -45.0533,40.7104,0. -45.0533,39.8464,0. -43.3545,39.7014,0. -42.5995,40.3518,0. -41.9388,41.3512,0. -41.2782,42.8911,0. -40.9007,44.1232,0. -39.8625,45.6609,0. -39.2018,46.6415,0. -38.6356,47.4135,0. -38.0693,48.0483,0. -37.503,48.862,0. -36.8424,49.1714,0. -36.0874,49.9064,0. -35.4267,50.4503,0. -34.1054,50.9881,0. -32.4066,51.9871,0. -31.2741,52.5071,0. -29.9528,53.304,0. -27.9709,54.1416,0. -26.272,55.1788,0. -25.517,55.6076,0. -24.5732,56.6074,0. -24.3845,57.2767,0. -24.3845,57.8838,0. -24.2901,58.4316,0. -26.1777,59.4059,0. -28.3484,59.4539,0. -30.3303,59.1165,0. -31.4628,58.3326,0. -32.5954,57.7834,0. -33.256,57.1233,0. -33.8223,56.2945,0. -34.4829,55.3401,0. -34.8605,54.9084,0. -35.238,54.6908,0. -36.5593,53.8643,0. -38.3524,53.5851,0.")
+    route = np.array(
+        [[20.93866679, 168.56555458],
+         [18.45091531, 166.77237183],
+         [16.01733564, 165.45107928],
+         [13.92043435, 165.2623232],
+         [12.17361734, 165.63983536],
+         [10.50804555, 166.96112791],
+         [9.67178793, 168.94306674],
+         [9.20628817, 171.58565184],
+         [9.48566359, 174.60574911],
+         [9.95078073, 176.68206597],
+         [10.69358, 178.94713892],
+         [11.06430687, -176.90022735],
+         [10.87900106, -172.27570342]])
 
-    s = Simulation('2014-12-01', route2, 3)
+    s = Simulation('2014-12-01', route, 3)
     s.sim_wind(3)
     s.sim_solar(0, 0, 2, 100)
     s.sim_all(20, 30)
 
-    print(temporal_optimization('2014-12-01', route2, 3, 1, 1, 2, 100))
+    print(temporal_optimization('2014-12-01', route, 3, 1, 1, 2, 100))
