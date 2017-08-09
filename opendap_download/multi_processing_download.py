@@ -6,7 +6,6 @@ __author__ = "Jan Urbansky"
 from multiprocessing.dummy import Pool as Threadpool
 import requests
 import logging
-import yaml
 import os
 import urllib.response
 from http import cookiejar
