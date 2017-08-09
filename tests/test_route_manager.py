@@ -37,7 +37,7 @@ def test_hash():
     ([1, 1, 2, 2], 157.2),
     ([2, 2, 3, 3], 157.2),
     ([2, 2, 100, -90], 9750),
-])
+     ])
 def test_haversine(test_input, expected):
     assert route_manager.haversine(test_input[0], test_input[1],
                                    test_input[2], test_input[3]) == pytest.approx(expected, 0.5)
