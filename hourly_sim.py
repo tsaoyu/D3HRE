@@ -274,13 +274,13 @@ class Simulation:
         self.solar_power = solar_df.solar_power
         pass
 
-    def sim_all(self, use, battery_capacity):
+    def sim_all(self, use, battery_capacity, shading_coef=0.05):
         """
         :param use:float Load of the system
         :param battery_capacity: float Wh total capacity of battery
         :return: None but update the remianing energy in battery
         """
-        power = self.solar_power + self.wind_power
+        power = (1 - shading_coef)*self.solar_power + self.wind_power
         battery_energy = min_max_model(power, use, battery_capacity)
         self.battery_energy = pd.Series(battery_energy, index=self.mission.index)
         return self.battery_energy
