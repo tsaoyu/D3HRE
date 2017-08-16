@@ -90,11 +90,10 @@ def soc_model_fixed_load(power, use, battery_capacity, depth_of_discharge=0.6,
 
         energy_history.append(energy)
 
-    if not battery_capacity:
-        SOC = np.array(energy_history) / battery_capacity
-    else:
-        # Zero battery size selected, energy history is returned instead
+    if battery_capacity == 0:
         SOC = np.array(energy_history)
+    else:
+        SOC = np.array(energy_history) / battery_capacity
     return SOC, energy_history, unmet_history, waste_history, use_history
 
 @lru_cache(maxsize=32)
@@ -177,7 +176,7 @@ def temporal_optimization(start_time, route, speed, solar_area, wind_area, use, 
     if trace_back:
         if performance_index:
             return LPSP, np.array(energy_history), np.array(unmet_history).sum(), np.array(waste_history).sum()
-        return  LPSP, SOC, energy_history, unmet_history, waste_history
+        return  LPSP, SOC, energy_history, unmet_history, waste_history, use_history, power
     else:
         return  LPSP
 
@@ -241,6 +240,7 @@ class Simulation:
             return power_correction
 
         wind_df = self.get_resource_df
+        wind_df = full_day_cut(wind_df).copy()
         # Apply wind speed to ideal wind turbine model, get power production correction due to speed
         wind_df['wind_power'] = wind_df.V2.apply(
             lambda x: power_from_turbine(x, area, power_coefficient, cut_in_speed, rated_speed)) - \
