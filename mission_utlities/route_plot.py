@@ -25,8 +25,9 @@ def plot_route(route, save=False):
     ax1.yaxis.set_major_formatter(lat_formatter)
     ax1.add_feature(cartopy.feature.LAND)
     ax1.add_feature(cartopy.feature.OCEAN)
-    ax1.add_feature(cartopy.feature.COASTLINE)
-    ax1.plot(route[:,1], route[:,0], 'g')
+    ax1.add_feature(cartopy.feature.COASTLINE, edgecolor='gray')
+    ax1.add_feature(cartopy.feature.BORDERS, edgecolor='gray')
+    ax1.plot(route[:,1], route[:,0], 'g',transform=ccrs.Geodetic())
     plt.show()
     if save:
         plt.savefig('../data/Figures/route' + str(route[0, 0]) + '.pdf', format='pdf')

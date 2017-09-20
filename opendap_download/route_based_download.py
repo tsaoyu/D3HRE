@@ -15,6 +15,7 @@ NUMBER_OF_CONNECTIONS = 6
 def hashFor(data):
     """
     Prepare the project id hash
+
     :param data: raw data for the hash
     :return: the hash code for the data (full length)
     """
@@ -28,6 +29,7 @@ def generate_single_download_link(start, end, lat_lon, data_set=None):
     Generate download URL at a period with given latitude and longitude.
     It support download link generation of multiple data set including wind, solar,
     pressure and air density.
+
     :param start: timestamp of start time in UTC
     :param end: timestamp of end time in UTC
     :param lat_lon: tuple of (lat, lon)
@@ -120,6 +122,7 @@ def download_URL(mission, data_set='solar', debug=False):
         Variable Details - File specifications for GEOS pdf file.
         The Grid in the documentation has points from 1 to 361 and 1 to 576.
         The MERRA-2 Portal uses 0 to 360 and 0 to 575.
+
         :param lat_lon: tuple (lat, lon)
         :return: nearest coordinates tuple
         """

@@ -26,11 +26,10 @@ test_route = np.array(
 # number that help us to track the download file for each mission
 # To make possible to store and reuse the data the hash should be right
 
-test_mission = route_manager.get_position_df('2014-01-01', test_route, 2)
+
 
 def test_hash():
     assert route_manager.hashFor(test_route)[:7] == 'fc34214'
-    assert route_manager.hashFor(test_mission)[:7] == 'c51dd51'
 
 
 @pytest.mark.parametrize("test_input, expected",[
@@ -41,4 +40,5 @@ def test_hash():
 def test_haversine(test_input, expected):
     assert route_manager.haversine(test_input[0], test_input[1],
                                    test_input[2], test_input[3]) == pytest.approx(expected, 0.5)
+
 
