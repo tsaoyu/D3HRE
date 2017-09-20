@@ -153,6 +153,16 @@ def download_URL(mission, data_set='solar', debug=False):
 
 
 def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER_OF_CONNECTIONS):
+    """
+    Resource dataFrame download function.
+
+
+    :param mission: (utc) time-indexed Pandas dataFrame contains lat, lon, speed and local_time
+    :param username: username of NASA earthdata portal
+    :param password: password of NASA earthdata portal
+    :param n: number of concurrent multiprocess download (adjust the number to avoid been banned)
+    :return: raw resource dataFrame, time-indexed Pandas dataFrame including all requested field
+    """
     folder = 'MERRA2data/' + hash_value(mission)[0:7]
     file_name = folder + 'resource.pkl'
 
@@ -230,6 +240,15 @@ def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER
 
 
 def resource_df_download_and_process(mission):
+    """
+    Process downloaded MEERA-2 dataFrame.
+
+    :param mission: time indexed Pandas dataFrame contains field of lat, lon, speed,
+        local_time, T2M, SWGDN, SWTDN, U2M, V2M
+    :return:  time indexed Pandas dataFrame with additional field in temperature (degree C),
+        kt(clearness index), V2 (wind speed at 2 metres height), true_wind_direction (degrees),
+        heading (degrees), Va (apparent wind speed), apparent_wind_direction(degrees)
+    """
     resource_df = resource_df_download(mission)
     df = pd.concat([mission, resource_df], axis=1).bfill()
 
