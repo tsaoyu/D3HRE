@@ -1,100 +1,15 @@
-from functools import lru_cache
-
 import numpy as np
 import pandas as pd
 
+from functools import lru_cache
+
+from gsee.gsee import brl_model, pv
 from mission_utlities import route_manager
 from opendap_download import route_based_download
-from gsee.gsee import brl_model, pv
 
 
-def full_day_cut(df):
-    '''
-    Cut mission into fully day length mission for simulation
-    :param df: pandas dataframe
-    :return: pandas dataframe that end at full day
-    '''
-    df = df[0:int(np.floor(len(df) / 24)) * 24]
-    return df
-
-
-def min_max_model(power, use, battery_capacity):
-    """
-    Minimal maximum battery model
-    :param power: Pandas TimeSeries of total power from renewable system
-    :param use: float unit W fixed load of the power system
-    :param battery_capacity: float unit Wh battery capacity
-    :return: list energy history in battery
-    """
-    power = power.tolist()
-    energy = 0
-    energy_history = []
-    for p in power:
-        energy = min(battery_capacity, max(0, energy + (p - use) * 1))
-        energy_history.append(energy)
-
-    return energy_history
-
-
-def soc_model_fixed_load(power, use, battery_capacity, depth_of_discharge=1,
-                         discharge_rate=0.005, battery_eff=0.9, discharge_eff=0.8):
-    """
-    Battery state of charge model with fixed load.
-
-    :param power: Pandas TimeSeries of total power from renewable system
-    :param use: float unit W fixed load of the power system
-    :param battery_capacity: float unit Wh battery capacity
-    :param depth_of_discharge: float 0 to 1 maximum allowed discharge depth
-    :param discharge_rate: self discharge rate
-    :param battery_eff: optional 0 to 1 battery energy store efficiency default 0.9
-    :param discharge_eff: battery discharge efficiency 0 to 1 default 0.8
-    :return: tuple SOC: state of charge, energy history: E in battery,
-    unmet_history: unmet energy history, waste_history: waste energy history
-    """
-    DOD = depth_of_discharge
-    power = power.tolist()
-    use_history = []
-    waste_history = []
-    unmet_history = []
-    energy_history = []
-    energy = 0
-    for p in power:
-        if p >= use:
-            use_history.append(use)
-            unmet_history.append(0)
-            energy_new = energy * (1 - discharge_rate) + (p - use) * battery_eff
-            if energy_new < battery_capacity:
-                energy = energy_new  # battery energy got update
-                waste_history.append(0)
-            else:
-                waste_history.append(p - use)
-                energy = energy
-
-        elif p < use:
-            energy_new = energy * (1 - discharge_rate) + (p - use) / discharge_eff
-            if energy_new > (1 - DOD) * battery_capacity:
-                energy = energy_new
-                unmet_history.append(0)
-                waste_history.append(0)
-                use_history.append(use)
-            elif energy * (1 - discharge_rate) + p * battery_eff < battery_capacity:
-                energy = energy * (1 - discharge_rate) + p * battery_eff
-                unmet_history.append(use - p)
-                use_history.append(0)
-                waste_history.append(0)
-            else:
-                unmet_history.append(use - p)
-                use_history.append(0)
-                waste_history.append(p)
-                energy = energy
-
-        energy_history.append(energy)
-
-    if battery_capacity == 0:
-        SOC = np.array(energy_history)
-    else:
-        SOC = np.array(energy_history) / battery_capacity
-    return SOC, energy_history, unmet_history, waste_history, use_history
+from D3HRE.core.dataframe_utility import full_day_cut
+from D3HRE.core.battery_models import min_max_model, soc_model_fixed_load
 
 @lru_cache(maxsize=32)
 def power_unit_area(start_time, route, speed, power_per_square=140,
@@ -102,6 +17,7 @@ def power_unit_area(start_time, route, speed, power_per_square=140,
                     technology='csi', system_loss=0.10, angles=None, dataFrame=False
                     ):
     """
+    Get power output of wind and PV system in a 1 metre square unit area.
 
     :param start_time: str or Dateindex start date of journey
     :param route: numpy nd array (n,2) [lat, lon] of way points
