@@ -232,15 +232,23 @@ def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER
 def resource_df_download_and_process(mission):
     resource_df = resource_df_download(mission)
     df = pd.concat([mission, resource_df], axis=1).bfill()
+
+    # Temperature processing
     df['temperature'] = df.T2M - 273
 
+    # Clearness index processing
     df['kt'] = df.SWGDN / df.SWTDN
 
+    # Wind speed at 2 metres height
     df['V2'] = np.sqrt(df.V2M ** 2 + df.U2M ** 2)
+
+    # Get true wind direction from north ward and east ward wind speed
     df['true_wind_direction'] = (np.degrees(np.arctan2(df['U2M'], df['V2M']))
                                  + 360) % 360
 
     location_list = [tuple(x) for x in df[['lat','lon']].values]
+
+    # Calculate platform heading by compass bearing
     heading = []
     for a, b in zip(location_list[:-1], location_list[1:]):
         heading.append(calculate_initial_compass_bearing(a, b))
@@ -254,7 +262,8 @@ def resource_df_download_and_process(mission):
     # ship speed vector            V_{ship} = [Uship, Vship] :: Vs
     #
     #                 V_{app} = V_{true} + (- V_{s})
-    #
+
+    # Get apparent wind vector and scalar apparent wind speed and direction
     V_s = df['speed']/3.6  # ship speed in DataFrame unit of km/h
 
     U_ship = V_s * np.sin(np.radians(df['heading']))
