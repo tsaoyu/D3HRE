@@ -13,6 +13,10 @@ def opencpn_coordinates_processing(coordinates: str) -> np.ndarray:
     str_list = list(map(lambda x: x.split(','), coordinates.split(' ')))
     del str_list[-1]
     route = np.array(str_list, dtype=float).T[:2].T
+    route[:, [0, 1]] = route[:, [1, 0]]
+    # OpenCPN XML copy gives (lon, lat, z) need convert to [lat, lon]
+    # Numpy advanced slicing used here
+    # ref: https://stackoverflow.com/questions/4857927/swapping-columns-in-a-numpy-array
     return route
 
 def read_route_from_gpx(file):

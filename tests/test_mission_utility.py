@@ -46,8 +46,6 @@ def test_interpolation():
     assert test_mission.lon.max() == pytest.approx( 180, 0.1)
 
 
-
-
 @pytest.mark.parametrize("test_input, expected",[
     ([1, 1, 2, 2], 157.2),
     ([2, 2, 3, 3], 157.2),
