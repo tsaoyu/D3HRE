@@ -14,7 +14,7 @@ def resource_df_processing(dataframe):
     """
 
     # Temperature processing
-    dataframe['temperature'] = dataframe.T2M - 273
+    dataframe['temperature'] = dataframe.T2M - 273.15
 
     # Clearness index processing
     dataframe['kt'] = dataframe.SWGDN / dataframe.SWTDN
@@ -39,18 +39,18 @@ def resource_df_processing(dataframe):
     dataframe['heading'] = heading
     # apparent wind                 V_{app} = [Uapp,   Vapp] :: Va
     # true wind at 2 metres height V_{true} = [U2M,     V2M] :: V2
-    # ship speed vector            V_{ship} = [Uship, Vship] :: Vs
+    # platform speed vector           V_{s} = [Up,       Vp] :: Vs
     #
     #                 V_{app} = V_{true} + (- V_{s})
 
     # Get apparent wind vector and scalar apparent wind speed and direction
     V_s = dataframe['speed'] / 3.6  # ship speed in DataFrame unit of km/h
 
-    U_ship = V_s * np.sin(np.radians(dataframe['heading']))
-    V_ship = V_s * np.cos(np.radians(dataframe['heading']))
+    U_p = V_s * np.sin(np.radians(dataframe['heading']))
+    V_p = V_s * np.cos(np.radians(dataframe['heading']))
 
-    U_app = dataframe['U2M'] - U_ship
-    V_app = dataframe['V2M'] - V_ship
+    U_app = dataframe['U2M'] - U_p
+    V_app = dataframe['V2M'] - V_p
 
     dataframe['Va'] = np.sqrt(U_app ** 2 + V_app ** 2)
     dataframe['apparent_wind_direction'] = (np.degrees(np.arctan2(U_app, V_app)) +
