@@ -10,6 +10,7 @@ from opendap_download import route_based_download
 
 from D3HRE.core.dataframe_utility import full_day_cut
 from D3HRE.core.battery_models import min_max_model, soc_model_fixed_load
+from D3HRE.core.wind_turbine_model import  power_from_turbine
 
 @lru_cache(maxsize=32)
 def power_unit_area(start_time, route, speed, power_per_square=140,
@@ -141,23 +142,8 @@ class Simulation:
         :return: Nothing returned but wind_power Pandas series was created in class
         """
 
-        def power_from_turbine(wind_speed, area, power_coefficient, cut_in_speed, cut_off_speed):
-            Cp = power_coefficient
-            A = area
-            power = 0
-            v = wind_speed
-            if v < cut_in_speed:
-                power = 0
-            elif cut_in_speed < v < cut_off_speed:
-                power = 1 / 2 * Cp * A * v ** 3
-            elif cut_off_speed < v < 3 * cut_off_speed:
-                power = 1 / 2 * Cp * A * cut_off_speed ** 3
-            elif v > 3 * cut_off_speed:
-                power = 0
 
-            return power
-
-        def ship_speed_correction(df, area):
+        def speed_power_correction(df, area):
             """
             :param df: Pandas dataframe contains apparent wind direction wind speed and speed of boat
             :param area: area of wind turbine
@@ -172,7 +158,7 @@ class Simulation:
         # Apply wind speed to ideal wind turbine model, get power production correction due to speed
         wind_df['wind_power'] = wind_df.V2.apply(
             lambda x: power_from_turbine(x, area, power_coefficient, cut_in_speed, rated_speed)) - \
-                                ship_speed_correction(wind_df, area)
+                                speed_power_correction(wind_df, area)
         self.wind_power_raw = wind_df.V2.apply(
             lambda x: power_from_turbine(x, area, power_coefficient, cut_in_speed, rated_speed))
         self.wind_power = wind_df.wind_power
