@@ -243,7 +243,6 @@ def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER
     return resource_df
 
 
-
 def resource_df_download_and_process(mission):
     """
     Process downloaded MEERA-2 dataFrame.
