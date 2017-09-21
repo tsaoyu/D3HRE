@@ -6,6 +6,7 @@ def calculate_initial_compass_bearing(pointA, pointB):
     The formulae used is the following:
         θ = atan2(sin(Δlong).cos(lat2),
                   cos(lat1).sin(lat2) − sin(lat1).cos(lat2).cos(Δlong))
+
     :Parameters:
       - `pointA: The tuple representing the latitude/longitude for the
         first point. Latitude and longitude must be in decimal degrees
