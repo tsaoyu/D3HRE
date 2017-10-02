@@ -20,7 +20,7 @@ test_route = np.array(
      [5.93230149, -158.1189975],
      [-1.60710319, -156.04268063]])
 
-test_mission = get_position_df('2014-01-01', test_route, 2)
+test_mission = get_mission('2014-01-01', test_route, 2)
 
 def test_hash_value():
     assert hash_value(test_route)[:7] == 'fc34214'
@@ -31,7 +31,7 @@ def test_variable_speed():
     Mission utility is designed to handle both constant speed and variable speed
     """
     speed = np.linspace(2, 5, num=test_route.shape[0]-1)
-    variable_speed_mission = get_position_df('2014-01-01', test_route, speed)
+    variable_speed_mission = get_mission('2014-01-01', test_route, speed)
     assert variable_speed_mission.speed[0] == 2
     assert variable_speed_mission.speed[-1] == 5
 
