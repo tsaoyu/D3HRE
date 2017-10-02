@@ -10,7 +10,7 @@ from opendap_download import route_based_download
 
 from D3HRE.core.dataframe_utility import full_day_cut
 from D3HRE.core.battery_models import min_max_model, soc_model_fixed_load
-from D3HRE.core.wind_turbine_model import  power_from_turbine
+from D3HRE.core.wind_turbine_model import  power_from_turbine, resistance_power
 
 @lru_cache(maxsize=32)
 def power_unit_area(start_time, route, speed, power_per_square=140,
@@ -135,6 +135,7 @@ class Simulation:
     def sim_wind(self, area, power_coefficient=0.3, cut_in_speed=2, rated_speed=15):
         """
         Simulation wind power generation considering the added resistance of wind due the wind turbine.
+
         :param area: float m^2 wind turbine swept area
         :param power_coefficient: float power coefficient of wind turbine
         :param cut_in_speed: float m/s cut-in speed of wind turbine
@@ -143,22 +144,12 @@ class Simulation:
         """
 
 
-        def speed_power_correction(df, area):
-            """
-            :param df: Pandas dataframe contains apparent wind direction wind speed and speed of boat
-            :param area: area of wind turbine
-            :return: power correction term of due to the apparent wind angle
-            """
-            A = area
-            power_correction = 1 / 2 * A * 0.6 * df.V2 ** 2 * np.cos(df.apparent_wind_direction) * df.speed
-            return power_correction
-
         wind_df = self.get_resource_df
         wind_df = full_day_cut(wind_df).copy()
         # Apply wind speed to ideal wind turbine model, get power production correction due to speed
         wind_df['wind_power'] = wind_df.V2.apply(
             lambda x: power_from_turbine(x, area, power_coefficient, cut_in_speed, rated_speed)) - \
-                                speed_power_correction(wind_df, area)
+                                resistance_power(wind_df, area)
         self.wind_power_raw = wind_df.V2.apply(
             lambda x: power_from_turbine(x, area, power_coefficient, cut_in_speed, rated_speed))
         self.wind_power = wind_df.wind_power
@@ -169,6 +160,7 @@ class Simulation:
                   **kwargs):
         """
         Simulate solar energy production based on various input of renewable energy system.
+
         :param title: float degrees title angle of PV panel
         :param azim: float degrees azim angle of PV panel
         :param tracking: int 0 1 or 2 0 for no tracking, 1 for one axis, 2 for two axis
@@ -190,6 +182,8 @@ class Simulation:
 
     def sim_all(self, use, battery_capacity, shading_coef=0.05):
         """
+        Simulation on both wind and PV system for hybrid renewable energy system.
+
         :param use:float Load of the system
         :param battery_capacity: float Wh total capacity of battery
         :return: None but update the remianing energy in battery
