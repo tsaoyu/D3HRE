@@ -2,6 +2,8 @@ import numpy as np
 from D3HRE.core.navigation_utility import calculate_initial_compass_bearing
 
 
+
+
 def resource_df_processing(dataframe):
     """
     Process downloaded MEERA-2 dataFrame.
@@ -17,6 +19,7 @@ def resource_df_processing(dataframe):
     dataframe['temperature'] = dataframe.T2M - 273.15
 
     # Clearness index processing
+
     dataframe['kt'] = dataframe.SWGDN / dataframe.SWTDN
 
     # Wind speed at 2 metres height
@@ -28,13 +31,13 @@ def resource_df_processing(dataframe):
 
     location_list = [tuple(x) for x in dataframe[['lat', 'lon']].values]
 
-    # Calculate platform heading by compass bearing
+    # Calculate heading with initial compass bearing
     heading = []
     for a, b in zip(location_list[:-1], location_list[1:]):
         heading.append(calculate_initial_compass_bearing(a, b))
+
     heading.append(heading[-1])
-    # Because the platform do not know what the next point to go after reach the
-    # last way point we let it stay the same the second last one
+    # As it reach the final way point heading stay unchanged
 
     dataframe['heading'] = heading
     # apparent wind                 V_{app} = [Uapp,   Vapp] :: Va
