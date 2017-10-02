@@ -191,8 +191,9 @@ class Mission():
         self.speed = speed
         self.df = get_mission(self.start_time, self.route, self.speed)
 
-    def generate_more(self):
-        pass
+    def __str__(self):
+        return "This mission is start from {a} at {b} UTC.".format(a = self.route[0],
+                                                                  b = self.start_time)
 
 
 if __name__ == '__main__':
