@@ -8,9 +8,6 @@ from datetime import timedelta
 from D3HRE.core.get_hash import hash_value
 
 
-
-
-
 def haversine(lon1, lat1, lon2, lat2):
     """
     Calculate the great circle distance between two points
@@ -132,16 +129,25 @@ def position_dataframe(start_date, way_points, speed):
     mission['speed'] = speedTS
     mission.fillna(method='bfill', inplace=True)
 
-    time_diff = np.floor(mission.lon / 180 * 12)
+    # Convert UTC time into local time
+    def find_timezone(array, value):
+        idx = (np.abs(array - value)).argmin()
+        return idx - 12
+
+    lons = np.linspace(-180, 180, 25)
+
+    local_time = []
+    for index, row in mission.iterrows():
+        local_time.append(index + timedelta(hours = int(find_timezone(lons, row.lon))))
     # time difference into timedelta
-    t_diff = time_diff.map(lambda x: timedelta(hours=x))
-    local_time = mission.index + t_diff
+    # t_diff = list(map(lambda x: timedelta(hours=x), time_diff))
+    #local_time = mission.index + t_diff
     mission['local_time'] = local_time
 
     return mission
 
 
-def get_position_df(start_time, route, speed):
+def get_mission(start_time, route, speed):
     """
     Calculate position dataFrame at given start time, route and speed
 
@@ -183,7 +189,7 @@ class Mission():
         self.start_time = start_time
         self.route = route
         self.speed = speed
-        self.df = get_position_df(self.start_time, self.route, self.speed)
+        self.df = get_mission(self.start_time, self.route, self.speed)
 
     def generate_more(self):
         pass
@@ -206,9 +212,9 @@ if __name__ == '__main__':
          [6.30766145, -159.15715593],
          [5.93230149, -158.1189975],
          [-1.60710319, -156.04268063]])
-    test_mission = get_position_df('2014-01-01', test_route, 2)
+    test_mission = get_mission('2014-01-01', test_route, 2)
     speed = np.linspace(2, 5, num=test_route.shape[0]-1)
-    variable_speed_mission = get_position_df('2014-01-01', test_route, 2)
+    variable_speed_mission = get_mission('2014-01-01', test_route, 2)
     print(test_mission.lon.min())
     print(variable_speed_mission.tail())
     print(hash_value(test_mission)[:7])
