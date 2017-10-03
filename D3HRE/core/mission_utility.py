@@ -219,3 +219,4 @@ if __name__ == '__main__':
     print(test_mission.lon.min())
     print(variable_speed_mission.tail())
     print(hash_value(test_mission)[:7])
+    print(hash_value(test_route)[:7])
