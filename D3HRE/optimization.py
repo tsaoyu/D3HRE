@@ -155,6 +155,7 @@ class Simulation_based_optimization():
         A range of options can be pass into optimization
         depth_of_discharge=1, discharge_rate=0.005, battery_eff=0.9, discharge_eff=0.8,title=0, azim=0, tracking=0,
         power_coefficient=0.3, cut_in_speed=2, cut_off_speed=15, technology='csi', system_loss=0.10
+
         :param pop_size: Population size for the optimization
         :param gen: Generations to be run
         :param kwargs:
