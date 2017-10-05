@@ -17,5 +17,5 @@ def test_simulation():
     s.sim_wind(3)
     s.sim_solar(0, 0, 2, 100)
     s.sim_all(20, 30)
-    print(s.battery_energy)
+    #print(s.battery_energy)
     pass
