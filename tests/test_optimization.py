@@ -3,7 +3,7 @@ import pytest
 from D3HRE.optimization import *
 from D3HRE.core.mission_utility import Mission
 
-from PyResis.PyResis import propulsion_power
+from PyResis import propulsion_power
 
 
 test_route =  np.array([[  10.69358 ,  -178.94713892], [  11.06430687, +176.90022735]])
