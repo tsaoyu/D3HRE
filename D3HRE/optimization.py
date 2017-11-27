@@ -3,7 +3,7 @@ import pandas as pd
 import pygmo as pg
 
 
-from PyResis import propulsion_power
+from PyResis.PyResis import propulsion_power
 
 from D3HRE import simulation
 from D3HRE.core.battery_models import soc_model_fixed_load
