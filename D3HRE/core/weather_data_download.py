@@ -10,7 +10,7 @@ from opendap_download.multi_processing_download import DownloadManager
 from D3HRE.core.get_hash import hash_value
 from D3HRE.core.weather_data_processing import resource_df_processing
 
-NUMBER_OF_CONNECTIONS = 6
+NUMBER_OF_CONNECTIONS = 4
 
 
 def generate_single_download_link(start, end, lat_lon, data_set=None):
