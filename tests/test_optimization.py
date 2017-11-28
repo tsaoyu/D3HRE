@@ -16,3 +16,4 @@ sbo = Simulation_based_optimization(test_route, '2014-01-01',2 ,40, ship=test_sh
 def test_optimization():
     sbo.run(discharge_rate=0.01, battery_eff=0.9, power_coefficient=0.28)
     pass
+
