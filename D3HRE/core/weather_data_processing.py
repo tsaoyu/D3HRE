@@ -42,7 +42,7 @@ def resource_df_processing(dataframe):
     dataframe['heading'] = heading
     # apparent wind                 V_{app} = [Uapp,   Vapp] :: Va
     # true wind at 2 metres height V_{true} = [U2M,     V2M] :: V2
-    # platform speed vector           V_{s} = [Up,       Vp] :: Vs
+    # platform speed vector          V_{sp} = [Up,       Vp] :: Vs
     #
     #                 V_{app} = V_{true} + (- V_{s})
 
@@ -58,4 +58,13 @@ def resource_df_processing(dataframe):
     dataframe['Va'] = np.sqrt(U_app ** 2 + V_app ** 2)
     dataframe['apparent_wind_direction'] = (np.degrees(np.arctan2(U_app, V_app)) +
                                             360) % 360
+    V_a = np.array([U_app, V_app]).T
+    V_sp = np.array([U_p, V_p]).T
+
+    wind_cos = []
+    for U,V in zip(V_a, V_sp):
+        wind_cos.append(np.dot(U, V)/np.linalg.norm(U)/np.linalg.norm(V))
+
+    dataframe['relative_wind_cos'] = wind_cos
+
     return dataframe
