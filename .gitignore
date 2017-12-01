@@ -1,6 +1,9 @@
 #PyCharm stuff
 /.idea
 
+# Notebook scripts
+notebook_scripts/
+
 # Resource Folder
 MERRA2data/
 
