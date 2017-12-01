@@ -207,7 +207,7 @@ def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER
                     url.append(URLS[url_index])
                 download_manager.download_urls = url
                 download_manager.start_download(n)
-            wind_xdata = xr.open_mfdataset(wind_files, concat_dim='time', autoclose=False)
+            wind_xdata = xr.open_mfdataset(wind_files, concat_dim='time', autoclose=True)
             # In case of complain on 'Too many files opened', switch autoclose to True,
             # Data processing will be slower with autoclose option on.
             wind_df = wind_xdata.to_dataframe()
@@ -226,7 +226,7 @@ def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER
                     url.append(URLS[url_index])
                 download_manager.download_urls = url
                 download_manager.start_download(n)
-            solar_xdata = xr.open_mfdataset(solar_files, concat_dim='time', autoclose=False)
+            solar_xdata = xr.open_mfdataset(solar_files, concat_dim='time', autoclose=True)
             # In case of complain on 'Too many files opened', switch autoclose to True,
             # Data processing will be slower with autoclose option on.
             solar_df = solar_xdata.to_dataframe()
