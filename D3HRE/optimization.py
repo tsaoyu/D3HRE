@@ -78,7 +78,7 @@ def temporal_optimization(start_time, route, speed, solar_area, wind_area, use, 
 
 class Single_mixed_objective_optimization_function:
     def __init__(self, route, start_time, speed, demand,
-                 ship, weight=[1, 1, 0.001, 10000], **kwargs):
+                 ship, weight=[210, 320, 1, 10000], **kwargs):
         self.route = route
         self.start_time = start_time
         self.speed = speed
@@ -102,43 +102,6 @@ class Single_mixed_objective_optimization_function:
     def get_nobj(self):
         return 1
 
-class Route_based_optimization():
-    """
-    A simple route based optimization that minimize the harvester cost.
-    """
-    def __init__(self, route, demand):
-        """
-        Init a route based optimization with only route and demand
-        :param route:
-        :param demand:
-        """
-        self.route = route
-        self.demand = demand
-    def result(self):
-        """
-        Return optimization result on route based optimization
-        :return: Area of solar panel and wind turbine in m^2
-        """
-        monthly_optimization = monthly_opt.Opt(self.route)
-        result = monthly_optimization.route_based_presizing(self.demand)
-        return result
-
-class Mission_based_optimization(Route_based_optimization):
-
-    def __init__(self, route, demand, start_time, speed):
-        Route_based_optimization.__init__(self, route, demand)
-        self.start_time = start_time
-        self.speed = speed
-
-    def result(self):
-        """
-        Return optimization result on route based optimization
-        :return: Area of solar panel and wind turbine in m^2
-        """
-        monthly_optimization = monthly_opt.Opt(self.route)
-        monthly_optimization.route_based_presizing(self.demand)
-        result = monthly_optimization.mission_based_preszing(self.start_time, self.speed)
-        return result
 
 class Simulation_based_optimization():
     def __init__(self, route, start_time, speed, demand, ship=None):
@@ -167,6 +130,39 @@ class Simulation_based_optimization():
         pop = pg.population(prob, pop_size)
         pop = algo.evolve(pop)
         return pop.champion_f, pop.champion_x
+
+    def convergence(self, pop_size=100, gen=100, **kwargs):
+        """
+        Run optimization with parameters.
+        A range of options can be pass into optimization
+        depth_of_discharge=1, discharge_rate=0.005, battery_eff=0.9, discharge_eff=0.8,title=0, azim=0, tracking=0,
+        power_coefficient=0.3, cut_in_speed=2, cut_off_speed=15, technology='csi', system_loss=0.10
+
+        :param pop_size: Population size for the optimization
+        :param gen: Generations to be run
+        :param kwargs:
+        :return:
+        """
+
+        prob = pg.problem(Single_mixed_objective_optimization_function(
+            self.route, self.start_time, self.speed, self.demand, self.ship, **kwargs))
+        uda = pg.pso(gen=gen)
+        algo = pg.algorithm(uda)
+        algo.set_verbosity(1)
+        pop = pg.population(prob, pop_size)
+        pop = algo.evolve(pop)
+        log = algo.extract(type(uda)).get_log()
+        return log, pop
+
+    def preview(self, **kwargs):
+        """
+        Preview of the optimisation. Return
+
+        :return:
+        """
+        route = tuple(self.route.flatten())
+        solar_power_unit, wind_power_unit = simulation.power_unit_area(self.start_time, route, self.speed, **kwargs)
+        return solar_power_unit, wind_power_unit
 
 
 if __name__ == '__main__':
