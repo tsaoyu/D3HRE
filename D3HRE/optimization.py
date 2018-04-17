@@ -116,7 +116,7 @@ def get_result_df(start_time, route, speed, solar_area, wind_area, use, battery_
     wind_power = wind_power_unit * wind_area
     power = solar_power + wind_power
     SOC, energy_history, unmet_history, waste_history, use_history = \
-        simulation.soc_model_fixed_load(power, use, battery_capacity, depth_of_discharge,
+        soc_model_fixed_load(power, use, battery_capacity, depth_of_discharge,
                              discharge_rate, battery_eff, discharge_eff)
 
     all_history = np.vstack((
@@ -242,7 +242,7 @@ class Simulation_based_optimization():
         """
         power = self.power_df(self)
         resource = self.resource_df(self)
-        pass 
+        pass
 
 
 if __name__ == '__main__':
