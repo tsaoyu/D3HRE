@@ -7,7 +7,7 @@ class HotelLoad():
 
     """
 
-    def __init__(self, mission, strategy='normal'):
+    def __init__(self, mission, power_consumption_list, strategy='normal'):
         """
 
 
@@ -18,18 +18,7 @@ class HotelLoad():
         self.strategy = strategy
         self.mission = mission
 
-
-        self.power_consumption_list = {'single_board_computer': {'power': [2, 10], 'duty_cycle': 0.5},
-                     'webcam': {'power': [0.6], 'duty_cycle': 1},
-                     'gps': {'power': [0.04, 0.4], 'duty_cycle': 0.9},
-                     'imu': {'power': [0.67, 1.1], 'duty_cycle': 0.9},
-                     'sonar': {'power': [0.5, 50, 0.2], 'duty_cycle': 0.5},
-                     'ph_sensor': {'power': [0.08, 0.1], 'duty_cycle': 0.95},
-                     'temp_sensor': {'power': [0.04], 'duty_cycle': 1},
-                     'wind_sensor': {'power': [0.67, 1.1], 'duty_cycle': 0.5},
-                     'servo_motors': {'power': [0.4, 1.35], 'duty_cycle': 0.5},
-                     'radio_transmitter': {'power': [0.5, 20], 'duty_cycle': 0.2}}
-
+        self.power_consumption_list = power_consumption_list
         self.components = list(self.power_consumption_list.keys())
 
     def component_power_consumption(self, component, performance_level=1):
@@ -82,8 +71,18 @@ if __name__ == '__main__':
     test_route = np.array([[10.69358, -178.94713892], [11.06430687, +176.90022735]])
     test_mission = Mission('2014-01-01', test_route, 2)
 
-    h_normal = HotelLoad(test_mission)
-    h_full = HotelLoad(test_mission, 'full-power')
+    power_consumption_list = {'single_board_computer': {'power': [2, 10], 'duty_cycle': 0.5},
+                              'webcam': {'power': [0.6], 'duty_cycle': 1},
+                              'gps': {'power': [0.04, 0.4], 'duty_cycle': 0.9},
+                              'imu': {'power': [0.67, 1.1], 'duty_cycle': 0.9},
+                              'sonar': {'power': [0.5, 50, 0.2], 'duty_cycle': 0.5},
+                              'ph_sensor': {'power': [0.08, 0.1], 'duty_cycle': 0.95},
+                              'temp_sensor': {'power': [0.04], 'duty_cycle': 1},
+                              'wind_sensor': {'power': [0.67, 1.1], 'duty_cycle': 0.5},
+                              'servo_motors': {'power': [0.4, 1.35], 'duty_cycle': 0.5},
+                              'radio_transmitter': {'power': [0.5, 20], 'duty_cycle': 0.2}}
+    h_normal = HotelLoad(test_mission, power_consumption_list)
+    h_full = HotelLoad(test_mission, power_consumption_list, 'full-power')
 
     print(h_normal.generate_power_consumption_timeseries())
     h_full_list = h_full.generate_power_consumption_timeseries()

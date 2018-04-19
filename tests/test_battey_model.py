@@ -1,6 +1,6 @@
-import pytest
 from D3HRE.core.mission_utility import Mission
-from D3HRE.core.hotel_load_model import HotelLoad
+from D3HRE.core.battery_models import Soc_model_variable_load
+
 from PyResis import propulsion_power
 
 import numpy as np
@@ -22,20 +22,11 @@ power_consumption_list = {'single_board_computer': {'power': [2, 10], 'duty_cycl
                               'servo_motors': {'power': [0.4, 1.35], 'duty_cycle': 0.5},
                               'radio_transmitter': {'power': [0.5, 20], 'duty_cycle': 0.2}}
 
-h_normal = HotelLoad(test_mission, power_consumption_list)
-h_full =  HotelLoad(test_mission, power_consumption_list, 'full-power')
 
-def test_hotel_load():
-    ts_normal = h_normal.generate_power_consumption_timeseries()
-    ts_full =h_full.generate_power_consumption_timeseries()
+test_mission.get_hotel_load(power_consumption_list)
+test_mission.get_propulsion_load(test_ship)
+test_mission.get_load_demand()
 
-    assert len(ts_normal) == len(test_mission.df)
-    assert len(ts_full) == len(test_mission.df)
 
-def mission_load():
-    assert test_mission.get_load_demand() == 0 # get_load_demand return 0 because hotel load is missing
-    assert test_mission.get_hotel_load(power_consumption_list) == h_normal
-    assert test_mission.get_hotel_load(power_consumption_list, 'full-power') == h_full
-    assert test_mission.get_load_demand() == 0 #  still full load demand isn't avaliable yet
-    test_mission.get_propulsion_load(test_ship)
-    assert test_mission.get_load_demand() == h_normal + test_ship.prop_power()
+
+

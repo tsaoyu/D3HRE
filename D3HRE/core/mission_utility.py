@@ -6,7 +6,7 @@ from math import radians, cos, sin, asin, sqrt
 from datetime import timedelta
 
 from D3HRE.core.get_hash import hash_value
-
+from D3HRE.core.hotel_load_model import HotelLoad
 
 def haversine(lon1, lat1, lon2, lat2):
     """
@@ -190,11 +190,31 @@ class Mission():
         self.route = route
         self.speed = speed
         self.df = get_mission(self.start_time, self.route, self.speed)
+        self.demand_status = None # 1 for hotel load, 2 for prop load, 3 for both
 
     def __str__(self):
         return "This mission is start from {a} at {b} UTC.".format(a = self.route[0],
                                                                   b = self.start_time)
 
+    def get_hotel_load(self, power_consumption_list, **kwargs):
+        hotel = HotelLoad(self.mission, power_consumption_list, kwargs)
+        self.hotel_load = hotel.generate_power_consumption_timeseries()
+        self.demand_status += 1
+        return self.hotel_load
+
+    def get_propulsion_load(self, vehicle):
+        self.vehicle = vehicle
+        self.prop_load = vehicle.prop_power()
+        self.demand_status += 2
+        return self.prop_load
+
+    def get_load_demand(self):
+        if self.demand_status != 3:
+            print('One of load demand is missing.')
+            return 0
+        else:
+            self.load_demand = self.hotel_load + self.prop_load
+            return self.load_demand
 
 if __name__ == '__main__':
     test_route = np.array(

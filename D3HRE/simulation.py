@@ -5,10 +5,47 @@ from functools import lru_cache
 
 from gsee.gsee import brl_model, pv
 from D3HRE.core.dataframe_utility import full_day_cut
-from D3HRE.core.battery_models import min_max_model
+from D3HRE.core.battery_models import min_max_model, Soc_model_variable_load, Battery
 from D3HRE.core.weather_data_download import resource_df_download_and_process
 from D3HRE.core.wind_turbine_model import power_from_turbine, resistance_power
 from D3HRE.core.mission_utility import Mission
+
+
+class Reactive_simulation(Mission):
+
+    def __init__(self):
+        self.df = full_day_cut(self.df)
+        self.resource_df = resource_df_download_and_process(self.df)
+        self.power_coefficient = 0.3
+        self.cut_in_speed=2
+        self.rated_speed=15
+
+
+    @lru_cache(maxsize=32)
+    def wind_power_simulation(self, area):
+        wind_df = pd.DataFrame()
+        wind_df['wind_power_raw'] = self.resource_df.V2.apply(
+            lambda x: power_from_turbine(x, area, self.cut_in_speed, self.rated_speed))
+        wind_df['wind_power_correction'] = resistance_power(wind_df, area)
+        wind_df['wind_power'] = wind_df['wind_power_correction'] - wind_df['wind_power_correction']
+        self.wind = wind_df
+        return wind_df['wind_power']
+
+    @lru_cache(maxsize=32)
+    def solar_power_simulation(self, area):
+        solar_df = pd.DataFrame()
+        solar_df['global_horizontal'] = self.resource_df.SWGDN
+        solar_df['diffuse_fraction'] = brl_model.location_run(solar_df)
+        solar_df['solar_power'] = pv.run_plant_model_location(solar_df)
+        self.solar = solar_df * area
+        return solar_df['solar_power']
+
+    def run(self, battery_capacity):
+        power_supply = self.wind['wind_power'] + self.solar['solar_power']
+        supply, load = power_supply.tolist(), self.load_demand.tolist()
+        model = Soc_model_variable_load(supply, load, battery_capacity)
+        model.get_lost_power_supply_probability()
+        return self.get_lost_power_supply_probability()
 
 
 class Sim:

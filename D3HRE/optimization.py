@@ -7,11 +7,13 @@ from PyResis import propulsion_power
 
 from D3HRE import simulation
 from D3HRE.core.battery_models import soc_model_fixed_load
+from D3HRE.core.mission_utility import Mission
 
 def objective_warpper(As, Aw, B, demand, route, start_time, speed, kwargs):
     lost_power_supply_probability = temporal_optimization(start_time, route, speed, As, Aw, demand, B,
                                             **kwargs)
     return lost_power_supply_probability
+
 
 def temporal_optimization(start_time, route, speed, solar_area, wind_area, use, battery_capacity, depth_of_discharge=1,
                            discharge_rate=0.005, battery_eff=0.9, discharge_eff=0.8,title=0, azim=0, tracking=0,
@@ -161,6 +163,41 @@ class Single_mixed_objective_optimization_function:
     def get_nobj(self):
         return 1
 
+
+
+
+class Mixed_objective_optimization_function(Mission):
+    def __init__(self, route, start_time, speed, demand,
+                 vehicle, weight=[210, 320, 1, 10000], **kwargs):
+        super.__init__(start_time, route, speed)
+        self.demand = demand
+        self.weight = weight
+        self.vehicle = vehicle
+        self.parameters = kwargs
+
+    def lost_power_supply_probability(self):
+        pass
+
+    def constraints(self):
+        deck_area = self.vehicle.maximum_deck_area()
+        max_wind_area = self.vehicle.beam ** 2 * np.pi / 4
+        max_battery_size = self.vehicle.displacement * 0.1 * 1000 * 500
+        return [deck_area, max_wind_area, max_battery_size]
+
+    def fitness(self, x):
+        weight = self.weight
+        obj = x[0]*weight[0] + x[1]*weight[1] + x[2]*weight[2]  + \
+              weight[3] * self.lost_power_supply_probability(x[0], x[1], x[2])
+        return [obj]
+    def get_bounds(self):
+        return [0, 0, 0], self.constraints()
+    def get_nobj(self):
+        return 1
+
+
+class Constraint_mixed_objective_optimisation(Mixed_objective_optimization_function):
+    def __init__(self):
+        pass
 
 class Simulation_based_optimization():
     def __init__(self, route, start_time, speed, demand, ship=None):
