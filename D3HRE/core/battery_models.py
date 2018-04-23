@@ -122,7 +122,7 @@ class Battery():
                     energy = energy_new
                     unmet_history.append(0)
                     waste_history.append(0)
-                    use_history.append(use)
+                    use_history.append(u)
                 elif energy * (1 - discharge_rate) + p * battery_eff < battery_capacity:
                     energy = energy * (1 - discharge_rate) + p * battery_eff
                     unmet_history.append(u - p)
@@ -151,15 +151,15 @@ class Battery():
         LPSP = 1 - self.unmet_history.count(0) / len(self.energy_history)
         return LPSP
 
-class Soc_model_variable_load(Battery):
+class Soc_model_variable_load():
 
-    def __init__(self, power, load, capacity, **kwargs):
-        super.__init__(capacity, kwargs)
-        self.run(power, load)
+    def __init__(self, battery, power, load):
+        self.battery = battery
+        self.battery.run(power, load)
 
     def get_lost_power_supply_probability(self):
 
-        return self.lost_power_supply_probability()
+        return self.battery.lost_power_supply_probability()
 
     def get_information_quality_performance_index(self):
 
@@ -227,3 +227,9 @@ def soc_model_variable_load(power, use, battery_capacity, depth_of_discharge=1,
     else:
         SOC = np.array(energy_history) / battery_capacity
     return SOC, energy_history, unmet_history, waste_history, use_history
+
+if __name__ == '__main__':
+    b1 = Battery(10)
+    b1.run([1,1,1], [1,1,1])
+    b1.run( [1, 1, 1], [10, 10, 10])
+    print(b1.lost_power_supply_probability())

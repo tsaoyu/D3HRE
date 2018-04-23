@@ -14,14 +14,14 @@ test_df = pd.DataFrame([[280, 10, 10, 2, 8, 8, 600, 1000],
                        columns=['T2M', 'U2M', 'V2M', 'speed', 'lat', 'lon', 'SWGDN', 'SWTDN'])
 
 resource_df = resource_df_processing(test_df)
-print(resource_df)
+
 
 
 def test_temperature_processing():
     assert resource_df.temperature[0] == pytest.approx(6.85)
     assert resource_df.temperature[1] == pytest.approx(11.85)
     assert resource_df.temperature[2] == pytest.approx(16.85)
-    print(resource_df)
+
 
 def test_true_wind_direction():
     assert resource_df.true_wind_direction[0] == 45   # East U= 10, North V= 10

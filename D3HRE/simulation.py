@@ -5,47 +5,76 @@ from functools import lru_cache
 
 from gsee.gsee import brl_model, pv
 from D3HRE.core.dataframe_utility import full_day_cut
+from D3HRE.core.hotel_load_model import HotelLoad
 from D3HRE.core.battery_models import min_max_model, Soc_model_variable_load, Battery
 from D3HRE.core.weather_data_download import resource_df_download_and_process
 from D3HRE.core.wind_turbine_model import power_from_turbine, resistance_power
 from D3HRE.core.mission_utility import Mission
 
 
-class Reactive_simulation(Mission):
+class Task():
 
-    def __init__(self):
-        self.df = full_day_cut(self.df)
+    def __init__(self, mission, vehicle, power_consumption_list):
+        self.mission = mission
+        self.vehicle = vehicle
+        self.power_consumption_list = power_consumption_list
+        self.get_load_demand()
+
+    def get_hotel_load(self, strategy='normal'):
+        hotel = HotelLoad(self.mission, self.power_consumption_list, strategy)
+        self.hotel_load = hotel.generate_power_consumption_timeseries()
+        return self.hotel_load
+
+    def get_propulsion_load(self):
+        self.prop_load = self.vehicle.prop_power()
+        return self.prop_load
+
+    def get_load_demand(self):
+        self.load_demand = self.get_hotel_load() + self.get_propulsion_load()
+        return self.load_demand
+
+class Reactive_simulation(Task):
+
+    def __init__(self, Task):
+        self.Task = Task
+        self.df = full_day_cut(self.Task.mission.df)
         self.resource_df = resource_df_download_and_process(self.df)
         self.power_coefficient = 0.3
-        self.cut_in_speed=2
-        self.rated_speed=15
+        self.cut_in_speed = 2
+        self.rated_speed = 15
 
+        self.tilt = 0
+        self.azim = 180
+        self.tracking = 0
+        self.capacity = 140
 
+    @property
     @lru_cache(maxsize=32)
-    def wind_power_simulation(self, area):
+    def wind_power_simulation(self):
         wind_df = pd.DataFrame()
         wind_df['wind_power_raw'] = self.resource_df.V2.apply(
-            lambda x: power_from_turbine(x, area, self.cut_in_speed, self.rated_speed))
-        wind_df['wind_power_correction'] = resistance_power(wind_df, area)
+            lambda x: power_from_turbine(x, 1, self.power_coefficient ,self.cut_in_speed, self.rated_speed))
+        wind_df['wind_power_correction'] = resistance_power(self.resource_df, 1)
         wind_df['wind_power'] = wind_df['wind_power_correction'] - wind_df['wind_power_correction']
         self.wind = wind_df
         return wind_df['wind_power']
 
+    @property
     @lru_cache(maxsize=32)
-    def solar_power_simulation(self, area):
-        solar_df = pd.DataFrame()
-        solar_df['global_horizontal'] = self.resource_df.SWGDN
-        solar_df['diffuse_fraction'] = brl_model.location_run(solar_df)
-        solar_df['solar_power'] = pv.run_plant_model_location(solar_df)
-        self.solar = solar_df * area
-        return solar_df['solar_power']
+    def solar_power_simulation(self):
+        self.solar = pd.DataFrame()
+        self.resource_df['global_horizontal'] = self.resource_df.SWGDN
+        self.resource_df['diffuse_fraction'] = brl_model.location_run(self.resource_df)
+        self.resource_df['solar_power'] = pv.run_plant_model_location(self.resource_df, self.tilt, self.azim, self.tracking, self.capacity)
+        self.solar['solar_power'] = self.resource_df['solar_power']
+        return self.solar['solar_power']
 
-    def run(self, battery_capacity):
-        power_supply = self.wind['wind_power'] + self.solar['solar_power']
-        supply, load = power_supply.tolist(), self.load_demand.tolist()
-        model = Soc_model_variable_load(supply, load, battery_capacity)
-        model.get_lost_power_supply_probability()
-        return self.get_lost_power_supply_probability()
+    def run(self, wind_area, solar_area, battery_capacity):
+        power_supply = self.wind_power_simulation * wind_area + self.solar_power_simulation * solar_area
+        supply, load = power_supply.tolist(), self.Task.load_demand.tolist()
+        model = Soc_model_variable_load(Battery(battery_capacity), supply, load)
+        lpsp = model.get_lost_power_supply_probability()
+        return lpsp
 
 
 class Sim:
@@ -164,22 +193,27 @@ def power_unit_area(start_time, route, speed, power_per_square=140,
 
 
 if __name__ == '__main__':
-    route = np.array(
-        [[20.93866679, 168.56555458],
-         [18.45091531, 166.77237183],
-         [16.01733564, 165.45107928],
-         [13.92043435, 165.2623232],
-         [12.17361734, 165.63983536],
-         [10.50804555, 166.96112791],
-         [9.67178793, 168.94306674],
-         [9.20628817, 171.58565184],
-         [9.48566359, 174.60574911],
-         [9.95078073, 176.68206597],
-         [10.69358, 178.94713892],
-         [11.06430687, -176.90022735],
-         [10.87900106, -172.27570342]])
-    mis = Mission('2014-12-01', route, 3)
-    s = Sim(mis)
-    s.sim_wind(3)
-    s.sim_solar(0, 0, 2, 100)
-    s.sim_all(20, 30)
+    test_route = np.array([[10.69358, -178.94713892], [11.06430687, +176.90022735]])
+    from PyResis import propulsion_power
+
+    test_ship = propulsion_power.Ship()
+    test_ship.dimension(5.72, 0.248, 0.76, 1.2, 5.72 / (0.549) ** (1 / 3), 0.613)
+
+    power_consumption_list = {'single_board_computer': {'power': [2, 10], 'duty_cycle': 0.5},
+                              'webcam': {'power': [0.6], 'duty_cycle': 1},
+                              'gps': {'power': [0.04, 0.4], 'duty_cycle': 0.9},
+                              'imu': {'power': [0.67, 1.1], 'duty_cycle': 0.9},
+                              'sonar': {'power': [0.5, 50, 0.2], 'duty_cycle': 0.5},
+                              'ph_sensor': {'power': [0.08, 0.1], 'duty_cycle': 0.95},
+                              'temp_sensor': {'power': [0.04], 'duty_cycle': 1},
+                              'wind_sensor': {'power': [0.67, 1.1], 'duty_cycle': 0.5},
+                              'servo_motors': {'power': [0.4, 1.35], 'duty_cycle': 0.5},
+                              'radio_transmitter': {'power': [0.5, 20], 'duty_cycle': 0.2}}
+
+    test_mission = Mission('2014-01-01', test_route, 2)
+    test_task = Task(test_mission, test_ship, power_consumption_list)
+
+    rea_sim = Reactive_simulation(test_task)
+    print(rea_sim.run(1, 1, 300))
+
+

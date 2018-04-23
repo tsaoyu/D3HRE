@@ -59,7 +59,7 @@ class HotelLoad():
     def generate_power_consumption_timeseries(self):
         duration = len(self.mission.df.index)
         power_consumption_list = [self.generate_power_consumption() for t in range(int(duration))]
-        load_demand_ts = pd.DataFrame(data=power_consumption_list, index = self.mission.df.index)
+        load_demand_ts = pd.Series(data=power_consumption_list, index = self.mission.df.index)
         return load_demand_ts
 
 
