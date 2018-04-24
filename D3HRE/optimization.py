@@ -9,6 +9,9 @@ from D3HRE import simulation
 from D3HRE.core.battery_models import soc_model_fixed_load
 from D3HRE.core.mission_utility import Mission
 
+
+
+
 def objective_warpper(As, Aw, B, demand, route, start_time, speed, kwargs):
     lost_power_supply_probability = temporal_optimization(start_time, route, speed, As, Aw, demand, B,
                                             **kwargs)
@@ -166,38 +169,88 @@ class Single_mixed_objective_optimization_function:
 
 
 
-class Mixed_objective_optimization_function(Mission):
-    def __init__(self, route, start_time, speed, demand,
-                 vehicle, weight=[210, 320, 1, 10000], **kwargs):
-        super.__init__(start_time, route, speed)
-        self.demand = demand
-        self.weight = weight
-        self.vehicle = vehicle
-        self.parameters = kwargs
+class Mixed_objective_optimization_function():
+    def __init__(self, Task, config={}):
+        self.Task = Task
+        self.config = config
+        self.set_parameters()
+        if config !={}:
+            self.reactive_sim = simulation.Reactive_simulation(Task, config=config)
+        else:
+            self.reactive_sim = simulation.Reactive_simulation(Task)
 
-    def lost_power_supply_probability(self):
-        pass
+    def set_parameters(self):
+        try:
+            cost = self.config['optimization']['cost']
+            self.weight = [cost['solar'], cost['wind'], cost['battery'], cost['lpsp']]
+            self.SED = self.config['simulation']['battery']['SED']
+            self.volume_factor = self.config['optimization']['constraints']['volume_factor']
+            self.water_plane_coff = self.config['optimization']['constraints']['water_plane_coff']
+            self.turbine_diameter_ratio = self.config['optimization']['constraints']['turbine_diameter_ratio']
+
+        except KeyError:
+            self.weight = [210, 320, 1, 10000]
+            self.SED = 400
+            self.volume_factor = 0.1
+            self.water_plane_coff = 0.88
+            self.turbine_diameter_ratio = 1.2
+
 
     def constraints(self):
-        deck_area = self.vehicle.maximum_deck_area()
-        max_wind_area = self.vehicle.beam ** 2 * np.pi / 4
-        max_battery_size = self.vehicle.displacement * 0.1 * 1000 * 500
-        return [deck_area, max_wind_area, max_battery_size]
+        deck_area = self.Task.vehicle.maximum_deck_area() * self.water_plane_coff
+        max_wind_area = (self.turbine_diameter_ratio*self.Task.vehicle.beam) ** 2 * np.pi / 4
+        max_battery_capacity = self.Task.vehicle.displacement * self.volume_factor * 1000 * self.SED
+        return [deck_area, max_wind_area, max_battery_capacity]
 
     def fitness(self, x):
         weight = self.weight
         obj = x[0]*weight[0] + x[1]*weight[1] + x[2]*weight[2]  + \
-              weight[3] * self.lost_power_supply_probability(x[0], x[1], x[2])
+              weight[3] * self.reactive_sim.run(x[0], x[1], x[2])
         return [obj]
     def get_bounds(self):
-        return [0, 0, 0], self.constraints()
+        return [0, 0, 0.001], self.constraints()
     def get_nobj(self):
         return 1
 
 
 class Constraint_mixed_objective_optimisation(Mixed_objective_optimization_function):
-    def __init__(self):
-        pass
+
+
+    def __init__(self, Task, config={}):
+
+        self.config = config
+        self.Task = Task
+        self.set_parameters()
+        if config != {}:
+            self.problem = pg.problem(Mixed_objective_optimization_function(Task, self.config))
+        else:
+            self.problem = pg.problem(Mixed_objective_optimization_function(Task))
+
+    def set_parameters(self):
+        try:
+            self.generation = self.config['optimization']['method']['pso']['generation']
+            self.pop_size = self.config['optimization']['method']['pso']['population']
+        except KeyError:
+            self.generation = 80
+            self.pop_size = 100
+
+    def run(self):
+        algo = pg.algorithm(pg.pso(gen=self.generation))
+        pop = pg.population(self.problem, self.pop_size)
+        pop = algo.evolve(pop)
+        self.champion = pop.champion_x
+        return pop.champion_f, pop.champion_x
+
+    def get_report(self):
+        rea_sim = simulation.Reactive_simulation(self.Task)
+        solar_area_opt, wind_area_opt, battery_capacity = self.champion
+        return rea_sim.result(solar_area_opt, wind_area_opt, battery_capacity)
+
+    def get_resource_df(self):
+        rea_sim = simulation.Reactive_simulation(self.Task)
+        return rea_sim.resource_df
+
+
 
 class Simulation_based_optimization():
     def __init__(self, route, start_time, speed, demand, ship=None):
@@ -283,23 +336,4 @@ class Simulation_based_optimization():
 
 
 if __name__ == '__main__':
-    ship1 =  propulsion_power.Ship()
-    ship1.dimension(5.72, 0.248, 0.76, 1.2, 5.72/(0.549)**(1/3),0.613)
-    soo = Single_mixed_objective_optimization_function(1,1,1,1,ship1)
-    route = np.array(
-      [[  20.93866679,  168.56555458],
-       [  18.45091531,  166.77237183],
-       [  16.01733564,  165.45107928],
-       [  13.92043435,  165.2623232 ],
-       [  12.17361734,  165.63983536],
-       [  10.50804555,  166.96112791],
-       [   9.67178793,  168.94306674],
-       [   9.20628817,  171.58565184],
-       [   9.48566359,  174.60574911],
-       [   9.95078073,  176.68206597],
-       [  10.69358   ,  178.94713892],
-       [  11.06430687, -176.90022735],
-       [  10.87900106, -172.27570342]])
-    sbo = Simulation_based_optimization(route, '2014-01-01',2, 40, ship=ship1 )
-    print(sbo.run(discharge_rate=0.01, battery_eff=0.9, power_coefficient=0.28, azim=30))
-    print(soo.get_bounds())
+    pass

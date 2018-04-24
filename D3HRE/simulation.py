@@ -35,27 +35,43 @@ class Task():
 
 class Reactive_simulation(Task):
 
-    def __init__(self, Task):
+    def __init__(self, Task, config={}):
         self.Task = Task
         self.df = full_day_cut(self.Task.mission.df)
         self.resource_df = resource_df_download_and_process(self.df)
-        self.power_coefficient = 0.3
-        self.cut_in_speed = 2
-        self.rated_speed = 15
+        self.config = config
+        self.set_parameter()
 
-        self.tilt = 0
-        self.azim = 180
-        self.tracking = 0
-        self.capacity = 140
+    def set_parameter(self):
+        try:
+            self.power_coefficient = self.config['transducer']['wind']['power_coef']
+            self.cut_in_speed = self.config['transducer']['wind']['v_in']
+            self.rated_speed = self.config['transducer']['wind']['v_rate']
+
+            self.tilt = self.config['transducer']['solar']['tilt']
+            self.azim = self.config['transducer']['solar']['azim']
+            self.tracking = self.config['transducer']['solar']['azim']
+            self.capacity = self.config['transducer']['solar']['power_density']
+
+        except KeyError:
+
+            self.power_coefficient = 0.3
+            self.cut_in_speed = 2
+            self.rated_speed = 15
+
+            self.tilt = 0
+            self.azim = 180
+            self.tracking = 0
+            self.capacity = 140
 
     @property
     @lru_cache(maxsize=32)
     def wind_power_simulation(self):
         wind_df = pd.DataFrame()
-        wind_df['wind_power_raw'] = self.resource_df.V2.apply(
+        wind_df['wind_raw'] = self.resource_df.V2.apply(
             lambda x: power_from_turbine(x, 1, self.power_coefficient ,self.cut_in_speed, self.rated_speed))
-        wind_df['wind_power_correction'] = resistance_power(self.resource_df, 1)
-        wind_df['wind_power'] = wind_df['wind_power_correction'] - wind_df['wind_power_correction']
+        wind_df['wind_correction'] = resistance_power(self.resource_df, 1)
+        wind_df['wind_power'] = wind_df['wind_raw'] - wind_df['wind_correction']
         self.wind = wind_df
         return wind_df['wind_power']
 
@@ -69,12 +85,41 @@ class Reactive_simulation(Task):
         self.solar['solar_power'] = self.resource_df['solar_power']
         return self.solar['solar_power']
 
-    def run(self, wind_area, solar_area, battery_capacity):
+    def run(self, solar_area, wind_area, battery_capacity):
         power_supply = self.wind_power_simulation * wind_area + self.solar_power_simulation * solar_area
         supply, load = power_supply.tolist(), self.Task.load_demand.tolist()
-        model = Soc_model_variable_load(Battery(battery_capacity), supply, load)
+        if self.config != {}:
+            model = Soc_model_variable_load(Battery(battery_capacity, config=self.config), supply, load)
+        else:
+            model = Soc_model_variable_load(Battery(battery_capacity), supply, load)
         lpsp = model.get_lost_power_supply_probability()
         return lpsp
+
+    def result(self, solar_area, wind_area, battery_capacity):
+        power_supply = self.wind_power_simulation * wind_area + self.solar_power_simulation * solar_area
+        supply, load = power_supply.tolist(), self.Task.load_demand.tolist()
+        if self.config != {}:
+            model = Soc_model_variable_load(Battery(battery_capacity, config=self.config), supply, load)
+        else:
+            model = Soc_model_variable_load(Battery(battery_capacity), supply, load)
+
+        prop_load = (self.Task.load_demand - self.Task.hotel_load).as_matrix()
+        load_demand = self.Task.load_demand.as_matrix()
+        hotel_load = self.Task.hotel_load.as_matrix()
+
+
+        load_demand_history = np.vstack((load_demand, prop_load, hotel_load))
+        load_demand_history_df = pd.DataFrame(data=load_demand_history.T, index=self.Task.mission.df.index,
+                                              columns=['Load_demand', 'Prop_load', 'Hotel_load'])
+        load_demand_history_df = full_day_cut(load_demand_history_df)
+
+        battery_history = model.get_battery_history()
+        battery_history_df = pd.DataFrame(data=battery_history.T, index=self.df.index,
+                                          columns=['SOC', 'Battery', 'Unmet', 'Waste', 'Supply'])
+
+        results = [battery_history_df, load_demand_history_df, self.solar * solar_area, self.wind * wind_area]
+        result_df = pd.concat(results, axis=1)
+        return result_df
 
 
 class Sim:

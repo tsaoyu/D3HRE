@@ -81,14 +81,26 @@ def soc_model_fixed_load(power, use, battery_capacity, depth_of_discharge=1,
 
 class Battery():
 
-    def __init__(self, capacity, depth_of_discharge=1,
-                         discharge_rate=0.005, battery_eff=0.9, discharge_eff=0.8):
+    def __init__(self, capacity, config={}):
         self.capacity = capacity
+        self.config = config
+        self.set_parameters()
 
-        self.depth_of_discharge = depth_of_discharge
-        self.discharge_rate = discharge_rate
-        self.battery_eff = battery_eff
-        self.discharge_eff = discharge_eff
+
+    def set_parameters(self):
+        try :
+            self.depth_of_discharge = self.config['simulation']['battery']['DOD']
+            self.discharge_rate = self.config['simulation']['battery']['sigma']
+            self.battery_eff = self.config['simulation']['battery']['eta_in']
+            self.discharge_eff = self.config['simulation']['battery']['eta_out']
+            self.energy =  self.config['simulation']['battery']['B0']
+
+        except KeyError:
+            self.depth_of_discharge = 1
+            self.discharge_rate = 0.005
+            self.battery_eff = 0.9
+            self.discharge_eff = 0.8
+            self.energy = 0
 
     def run(self, power, use):
 
@@ -103,7 +115,8 @@ class Battery():
         waste_history = []
         unmet_history = []
         energy_history = []
-        energy = 0
+        SOC = []
+        energy = self.energy
         for p, u in zip(power, use):
             if p >= u:
                 use_history.append(u)
@@ -135,17 +148,24 @@ class Battery():
                     energy = energy
 
             energy_history.append(energy)
+            SOC.append(energy/battery_capacity)
 
-            if battery_capacity == 0:
-                SOC = np.array(energy_history)
-            else:
-                SOC = np.array(energy_history) / battery_capacity
 
             self.SOC = SOC
             self.energy_history = energy_history
             self.unmet_history = unmet_history
             self.waste_history = waste_history
             self.use_history = use_history
+
+    def battery_history(self):
+        history = np.vstack((
+                    np.array(self.SOC),
+                    np.array(self.energy_history),
+                    np.array(self.unmet_history),
+                    np.array(self.waste_history),
+                    np.array(self.use_history)
+        ))
+        return history
 
     def lost_power_supply_probability(self):
         LPSP = 1 - self.unmet_history.count(0) / len(self.energy_history)
@@ -161,7 +181,11 @@ class Soc_model_variable_load():
 
         return self.battery.lost_power_supply_probability()
 
-    def get_information_quality_performance_index(self):
+    def get_battery_history(self):
+
+        return self.battery.battery_history()
+
+    def get_quality_performance_index(self):
 
         pass
 
