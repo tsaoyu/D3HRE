@@ -8,7 +8,7 @@ ephem
 seaborn
 gpxpy
 requests
-pygmo
+pygmo==2.6
 nvector
 pytest
 pytest-cov
