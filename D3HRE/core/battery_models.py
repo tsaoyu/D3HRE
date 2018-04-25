@@ -93,14 +93,14 @@ class Battery():
             self.discharge_rate = self.config['simulation']['battery']['sigma']
             self.battery_eff = self.config['simulation']['battery']['eta_in']
             self.discharge_eff = self.config['simulation']['battery']['eta_out']
-            self.energy =  self.config['simulation']['battery']['B0']
+            self.init_charge =  self.config['simulation']['battery']['B0']
 
         except KeyError:
             self.depth_of_discharge = 1
             self.discharge_rate = 0.005
             self.battery_eff = 0.9
             self.discharge_eff = 0.8
-            self.energy = 0
+            self.init_charge = 0
 
     def run(self, power, use):
 
@@ -116,7 +116,7 @@ class Battery():
         unmet_history = []
         energy_history = []
         SOC = []
-        energy = self.energy
+        energy = self.init_charge * self.capacity
         for p, u in zip(power, use):
             if p >= u:
                 use_history.append(u)

@@ -241,6 +241,11 @@ class Constraint_mixed_objective_optimisation(Mixed_objective_optimization_funct
         self.champion = pop.champion_x
         return pop.champion_f, pop.champion_x
 
+    def get_lpsp(self):
+        rea_sim = simulation.Reactive_simulation(self.Task)
+        solar_area_opt, wind_area_opt, battery_capacity = self.champion
+        return rea_sim.run(solar_area_opt, wind_area_opt, battery_capacity)
+
     def get_report(self):
         rea_sim = simulation.Reactive_simulation(self.Task)
         solar_area_opt, wind_area_opt, battery_capacity = self.champion

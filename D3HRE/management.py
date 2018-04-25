@@ -1,1 +1,183 @@
 import visilibity as vis
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+def construct_environment_demo(power_dataframe, battery_capacity):
+    aggregated_power = power_dataframe.cumsum().Power
+    aggregated_power_lower = []
+    aggregated_power_higher = []
+    i = 0
+    for power in aggregated_power.tolist():
+        aggregated_power_lower.append([i, power])
+        aggregated_power_higher.append([i, power + battery_capacity])
+        i += 1
+
+    # Construct the upper hole in a reverse order
+    aggregated_power_higher.reverse()
+    aggregated_power_higher.insert(0, aggregated_power_higher[-1])
+    aggregated_power_higher.insert(1, [aggregated_power_higher[0][0], aggregated_power_higher[1][1]])
+    del aggregated_power_higher[-1]
+
+    # Construct the lower hole in the reverse order
+    aggregated_power_lower.append([aggregated_power_lower[-1][0], aggregated_power_lower[0][1]])
+    # close the hole
+    # aggregated_power_lower.append(aggregated_power_lower[0])
+
+    # Construct the wall list
+    wall_list = []
+    wall_list.append([aggregated_power_lower[0][0], 0])
+    wall_list.append([aggregated_power_lower[-1][0], 0])
+    wall_list.append(aggregated_power_higher[2])
+    wall_list.append(aggregated_power_higher[1])
+
+    higher_hole_points = [vis.Point(x, y) for x, y in aggregated_power_higher]
+    lower_hole_points = [vis.Point(x, y) for x, y in aggregated_power_lower]
+    wall_points = [vis.Point(x, y) for x, y in wall_list]
+
+    higher_hole = vis.Polygon(higher_hole_points)
+
+    lower_hole = vis.Polygon(lower_hole_points)
+
+    wall = vis.Polygon(wall_points)
+    return wall, higher_hole, lower_hole
+
+
+class Finite_optimal_management():
+
+    def __init__(self, power_dataframe, battery_capacity, strategy='full-empty', epsilon=0.00001):
+        self.power_dataframe = power_dataframe
+        self.battery_capacity = battery_capacity
+        self.time = len(self.power_dataframe)
+        self.epsilon = epsilon
+        self.strategy = strategy
+        self.aggregated_power_higher = None
+        self.aggregated_power_lower = None
+        self.wall_list = None
+        self.env = None
+
+    @property
+    def aggregated_power(self):
+        return self.power_dataframe.cumsum()
+
+    def get_boundary(self):
+        aggregated_power_lower = []
+        aggregated_power_higher = []
+        i = 0
+        for power in self.aggregated_power.tolist():
+            aggregated_power_lower.append([i, power])
+            aggregated_power_higher.append([i, power + self.battery_capacity])
+            i += 1
+
+        # Construct the upper hole in a reverse order
+        aggregated_power_higher.reverse()
+        aggregated_power_higher.insert(0, aggregated_power_higher[-1])
+        aggregated_power_higher.insert(1, [aggregated_power_higher[0][0], aggregated_power_higher[1][1]])
+        del aggregated_power_higher[-1]
+
+        # Construct the lower hole in the reverse order
+        aggregated_power_lower.append([aggregated_power_lower[-1][0], aggregated_power_lower[0][1]])
+        self.aggregated_power_higher = aggregated_power_higher
+        self.aggregated_power_lower = aggregated_power_lower
+        return aggregated_power_higher, aggregated_power_lower
+
+    def construct_wall(self):
+        wall_list = []
+        left_x = self.aggregated_power_lower[0][0] - 1  # esstentially time - 1
+        right_x = self.aggregated_power_lower[-1][0] + 1  # esstentially time + 1
+        bottom_y = 0
+        top_y = self.aggregated_power_higher[1][1] + 50
+        wall_list.append([left_x, bottom_y])
+        wall_list.append([right_x, bottom_y])
+        wall_list.append([right_x, top_y])
+        wall_list.append([left_x, top_y])
+        self.wall_list = wall_list
+        return wall_list
+
+    def _convert_to_visilibity_points(self, points_list):
+        return [vis.Point(x, y) for x, y in points_list]
+
+    def _convert_to_visilibity_polygon(self, points_list):
+        vis_points = [vis.Point(x, y) for x, y in points_list]
+        vis_polygon = vis.Polygon(vis_points)
+        return vis_polygon
+
+    def construct_env(self):
+        self.wall = self._convert_to_visilibity_polygon(self.wall_list)
+        self.higher_hole = self._convert_to_visilibity_polygon(self.aggregated_power_higher)
+        self.lower_hole = self._convert_to_visilibity_polygon(self.aggregated_power_lower)
+        env = vis.Environment([self.wall, self.higher_hole, self.lower_hole])
+        self.env = env
+        return env
+
+    def check_env(self):
+        print('Is the higher hole in standard form?', self.higher_hole.is_in_standard_form())
+        print('Is the lower hole in standard form?', self.lower_hole.is_in_standard_form())
+        print('Is the wall in standard form?', self.wall.is_in_standard_form())
+        print('Is the environment valid?', self.env.is_valid(self.epsilon))
+
+    def plot_env(self):
+        wall_list = self.wall_list[:]
+        higher_hole = self.aggregated_power_higher[:]
+        lower_hole = self.aggregated_power_lower[:]
+
+        wall_list.append(wall_list[0])
+        higher_hole.append(higher_hole[0])
+        lower_hole.append(lower_hole[0])
+
+        wall_list_x, wall_list_y = np.array(wall_list).T
+        higher_hole_x, higher_hole_y = np.array(higher_hole).T
+        lower_hole_x, lower_hole_y = np.array(lower_hole).T
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.plot(wall_list_x, wall_list_y, 'black')
+        ax.plot(higher_hole_x, higher_hole_y)
+        ax.plot(lower_hole_x, lower_hole_y)
+        return ax
+
+    def find_shortest_path(self):
+        base_energy_start = self.aggregated_power_lower[0][1]
+        base_energy_end = self.aggregated_power_lower[-2][1]
+
+        if self.strategy == 'full-empty':
+            strategy_state = (1, 0)
+        elif self.strategy == 'full-full':
+            strategy_state = (1, 1)
+        elif self.strategy == 'empty-empty':
+            strategy_state = (0, 0)
+        elif isinstance(strategy, tuple):
+            strategy_state = self.strategy
+        else:
+            print('This operation strategy is not supported!')
+
+        self.start_energy = base_energy_start + strategy_state[0] * self.battery_capacity
+        self.end_energy = base_energy_end + strategy_state[1] * self.battery_capacity
+
+        start = vis.Point(0, self.start_energy)
+        end = vis.Point(self.time - 1, self.end_energy)
+        start.snap_to_boundary_of(self.env, self.epsilon)
+        start.snap_to_vertices_of(self.env, self.epsilon)
+        vis_poly = vis.Visibility_Polygon(start, self.env, self.epsilon)
+        shortest_path = self.env.shortest_path(start, end, self.epsilon)
+        return shortest_path
+
+    def find_optimal_dispatch(self):
+        self.get_boundary()
+        self.construct_wall()
+        self.construct_env()
+        vis_path = self.find_shortest_path()
+        optimal_dispatch = [[point.x(), point.y()] for point in vis_path.path()]
+        self.optimal_dispatch = optimal_dispatch
+        return optimal_dispatch
+
+    def plot_result(self):
+        ax = self.plot_env()
+        ax.plot(0, self.start_energy, 'go')
+        ax.plot(self.time - 1, self.end_energy, 'ro')
+        optimal_dispatch_x, optimal_dispatch_y = np.array(self.optimal_dispatch).T
+        ax.plot(optimal_dispatch_x, optimal_dispatch_y, 'black')
+
+
