@@ -226,6 +226,9 @@ class Constraint_mixed_objective_optimisation(Mixed_objective_optimization_funct
         else:
             self.problem = pg.problem(Mixed_objective_optimization_function(Task))
 
+        self.rea_sim = simulation.Reactive_simulation(self.Task, config=self.config)
+
+
     def set_parameters(self):
         try:
             self.generation = self.config['optimization']['method']['pso']['generation']
@@ -242,18 +245,15 @@ class Constraint_mixed_objective_optimisation(Mixed_objective_optimization_funct
         return pop.champion_f, pop.champion_x
 
     def get_lpsp(self):
-        rea_sim = simulation.Reactive_simulation(self.Task)
         solar_area_opt, wind_area_opt, battery_capacity = self.champion
-        return rea_sim.run(solar_area_opt, wind_area_opt, battery_capacity)
+        return self.rea_sim.run(solar_area_opt, wind_area_opt, battery_capacity)
 
     def get_report(self):
-        rea_sim = simulation.Reactive_simulation(self.Task)
         solar_area_opt, wind_area_opt, battery_capacity = self.champion
-        return rea_sim.result(solar_area_opt, wind_area_opt, battery_capacity)
+        return self.rea_sim.result(solar_area_opt, wind_area_opt, battery_capacity)
 
     def get_resource_df(self):
-        rea_sim = simulation.Reactive_simulation(self.Task)
-        return rea_sim.resource_df
+        return self.rea_sim.resource_df
 
 
 

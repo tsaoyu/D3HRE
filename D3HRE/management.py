@@ -1,4 +1,5 @@
 import visilibity as vis
+import logging
 
 
 import pandas as pd
@@ -47,20 +48,28 @@ def construct_environment_demo(power_dataframe, battery_capacity):
 
 class Finite_optimal_management():
 
-    def __init__(self, power_dataframe, battery_capacity, strategy='full-empty', epsilon=0.00001):
-        self.power_dataframe = power_dataframe
-        self.battery_capacity = battery_capacity
-        self.time = len(self.power_dataframe)
+    def __init__(self, power_series, battery_capacity, strategy='full-empty', epsilon=0.00001, config={}):
+        self.power_series = power_series
+        self.config = config
+        self.time = len(self.power_series)
         self.epsilon = epsilon
         self.strategy = strategy
-        self.aggregated_power_higher = None
-        self.aggregated_power_lower = None
-        self.wall_list = None
-        self.env = None
+        self.set_parameters()
+        self.battery_capacity = battery_capacity
+        logging.basicConfig(filename='management.log', level=logging.DEBUG)
+
+
+    def set_parameters(self):
+        try:
+            self.DOD = self.config['simulation']['battery']['DOD']
+            logging.info('Use value from config file DOD: {}'.format(self.DOD))
+        except KeyError:
+            self.DOD = 0.5
+            logging.info('Default value of DOD: {} is used'.format(self.DOD))
 
     @property
     def aggregated_power(self):
-        return self.power_dataframe.cumsum()
+        return self.power_series.cumsum()
 
     def get_boundary(self):
         aggregated_power_lower = []
@@ -68,7 +77,8 @@ class Finite_optimal_management():
         i = 0
         for power in self.aggregated_power.tolist():
             aggregated_power_lower.append([i, power])
-            aggregated_power_higher.append([i, power + self.battery_capacity])
+            aggregated_power_higher.append([i, power + self.battery_capacity * (1 - self.DOD -0.03)])
+            #TODO this is hard coded energy bumper
             i += 1
 
         # Construct the upper hole in a reverse order
@@ -153,7 +163,8 @@ class Finite_optimal_management():
         else:
             print('This operation strategy is not supported!')
 
-        self.start_energy = base_energy_start + strategy_state[0] * self.battery_capacity
+        self.start_energy = base_energy_start + strategy_state[0] * self.battery_capacity * (1 - self.DOD -0.03)
+        #TODO this is hard coded
         self.end_energy = base_energy_end + strategy_state[1] * self.battery_capacity
 
         start = vis.Point(0, self.start_energy)
