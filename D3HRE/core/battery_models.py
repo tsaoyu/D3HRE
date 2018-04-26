@@ -95,12 +95,14 @@ class Battery():
             self.discharge_eff = self.config['simulation']['battery']['eta_out']
             self.init_charge =  self.config['simulation']['battery']['B0']
 
+
         except KeyError:
+            print('Parameter is not found in config file, default values are used.')
             self.depth_of_discharge = 1
             self.discharge_rate = 0.005
             self.battery_eff = 0.9
             self.discharge_eff = 0.8
-            self.init_charge = 0
+            self.init_charge = 1
 
     def run(self, power, use):
 
