@@ -132,9 +132,9 @@ class Reactive_simulation(Task):
         else:
             model = Soc_model_variable_load(Battery(battery_capacity), supply, load)
 
-        prop_load = (self.Task.load_demand - self.Task.hotel_load).as_matrix()
-        load_demand = self.Task.load_demand.as_matrix()
-        hotel_load = self.Task.hotel_load.as_matrix()
+        prop_load = (self.Task.load_demand[:post_run_len] - self.Task.hotel_load[:post_run_len]).as_matrix()
+        load_demand = self.Task.load_demand[:post_run_len].as_matrix()
+        hotel_load = self.Task.hotel_load[:post_run_len].as_matrix()
 
         load_demand_history = np.vstack((load_demand, prop_load, hotel_load))
         load_demand_history_df = pd.DataFrame(data=load_demand_history[:post_run_len].T,
@@ -147,7 +147,7 @@ class Reactive_simulation(Task):
         battery_history_df = pd.DataFrame(data=battery_history[:post_run_len].T, index=self.df[:post_run_len].index,
                                           columns=['SOC', 'Battery', 'Unmet', 'Waste', 'Supply'])
 
-        results = [battery_history_df, load_demand_history_df[:post_run_len], self.solar * solar_area, self.wind * wind_area]
+        results = [battery_history_df, load_demand_history_df[:post_run_len]]
         result_df = pd.concat(results, axis=1)
         return result_df
 
