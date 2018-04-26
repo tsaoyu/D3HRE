@@ -1,10 +1,13 @@
 # D3HRE
-Data Driven Dynamic Hybrid Renewable Energy (D3HRE) framework is a design and simulation environment for renewable based power system. 
+Data Driven Dynamic Hybrid Renewable Energy (D3HRE) framework is a simulation and design framework for moving platforms. 
 
 [![Travis](https://travis-ci.org/tsaoyu/D3HRE.svg?branch=master)](https://travis-ci.org/tsaoyu/D3HRE)
 [![codecov](https://codecov.io/gh/tsaoyu/D3HRE/branch/master/graph/badge.svg)](https://codecov.io/gh/tsaoyu/D3HRE)
+[![DOI](https://zenodo.org/badge/129913383.svg)](https://zenodo.org/badge/latestdoi/129913383)
 
-Compare to other hybrid renewable energy simulation and optimization software such as [HOMER](http://www.homerenergy.com), [RETScreen](http://www.nrcan.gc.ca/energy/software-tools/7465), [SAM](https://sam.nrel.gov), this package foucs on the design of hybrid renewable power system on moving platforms. 
+This program is featured in automatic spatail-temporal weather data retrieving and processing, build in non-stationary solar panel and wind turbine model and bio-insipred constriant optimisation capability. It can be used to design hybrid power system for moving platforms such as ships, aeroplanes and cars. 
+
+If you are looking for design and simulation tool for stationary applications, please refer to [HOMER](http://www.homerenergy.com), [RETScreen](http://www.nrcan.gc.ca/energy/software-tools/7465), [SAM](https://sam.nrel.gov). 
 
 
 
@@ -31,6 +34,6 @@ nvector
 ```
 
 ## Citation
-If you are using `D3HRE` in your research, please cite the following:
+If you are using `D3HRE` in your research, please consider cite this software use DOI provided. 
 
-Cao, Yu, Townsend, Nicholas and Tan, Mingyi (2017) **Hybrid renewable energy system for ocean going platforms** At OCEANS'17 MTS/IEEE, Aberdeen, United Kingdom.
+
