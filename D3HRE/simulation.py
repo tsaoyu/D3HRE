@@ -147,8 +147,10 @@ class Reactive_simulation(Task):
         battery_history_df = pd.DataFrame(data=battery_history[:post_run_len].T, index=self.df[:post_run_len].index,
                                           columns=['SOC', 'Battery', 'Unmet', 'Waste', 'Supply'])
 
-        results = [battery_history_df, load_demand_history_df[:post_run_len]]
+        results = [battery_history_df, load_demand_history_df[:post_run_len],
+                   self.solar[:post_run_len] * solar_area, self.wind[:post_run_len] * wind_area]
         result_df = pd.concat(results, axis=1)
+
         return result_df
 
 class Sim:
