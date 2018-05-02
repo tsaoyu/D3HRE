@@ -54,6 +54,7 @@ class Finite_optimal_management():
         self.time = len(self.power_series)
         self.epsilon = epsilon
         self.strategy = strategy
+        self.scale = 0.65
         self.set_parameters()
         self.battery_capacity = battery_capacity
         logging.basicConfig(filename='management.log', level=logging.DEBUG)
@@ -74,12 +75,16 @@ class Finite_optimal_management():
     def get_boundary(self):
         aggregated_power_lower = []
         aggregated_power_higher = []
+        aggregated_power_higher_dbg = []
         i = 0
         for power in self.aggregated_power.tolist():
-            aggregated_power_lower.append([i, power])
-            aggregated_power_higher.append([i, power + self.battery_capacity * (1 - self.DOD -0.03)])
+            aggregated_power_lower.append([i, power * self.scale])
+            aggregated_power_higher.append([i, power * self.scale + self.battery_capacity * (1 - self.DOD)])
+            aggregated_power_higher_dbg.append([i, power + self.battery_capacity])
             #TODO this is hard coded energy bumper
             i += 1
+
+        self.aggregated_power_higher_dbg = aggregated_power_higher_dbg
 
         # Construct the upper hole in a reverse order
         aggregated_power_higher.reverse()
@@ -140,10 +145,13 @@ class Finite_optimal_management():
         wall_list_x, wall_list_y = np.array(wall_list).T
         higher_hole_x, higher_hole_y = np.array(higher_hole).T
         lower_hole_x, lower_hole_y = np.array(lower_hole).T
+        higher_limit_hole_x, higher_limit_hole_y = np.array(self.aggregated_power_higher_dbg).T
+
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.plot(wall_list_x, wall_list_y, 'black')
+        ax.plot(higher_limit_hole_x, higher_limit_hole_y)
         ax.plot(higher_hole_x, higher_hole_y)
         ax.plot(lower_hole_x, lower_hole_y)
         return ax
@@ -158,12 +166,12 @@ class Finite_optimal_management():
             strategy_state = (1, 1)
         elif self.strategy == 'empty-empty':
             strategy_state = (0, 0)
-        elif isinstance(strategy, tuple):
+        elif isinstance(self.strategy, tuple):
             strategy_state = self.strategy
         else:
             print('This operation strategy is not supported!')
 
-        self.start_energy = base_energy_start + strategy_state[0] * self.battery_capacity * (1 - self.DOD -0.03)
+        self.start_energy = base_energy_start + strategy_state[0] * self.battery_capacity * (1 - self.DOD)
         #TODO this is hard coded
         self.end_energy = base_energy_end + strategy_state[1] * self.battery_capacity
 
