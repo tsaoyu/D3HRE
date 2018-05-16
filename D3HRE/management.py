@@ -45,6 +45,15 @@ def construct_environment_demo(power_dataframe, battery_capacity):
     wall = vis.Polygon(wall_points)
     return wall, higher_hole, lower_hole
 
+class Absolute_follow_management():
+
+    def __init__(self, power_series, battery_capacity):
+        pass
+
+    def dispatch(self):
+        return this_dispatch
+
+
 
 class Finite_optimal_management():
 
@@ -198,5 +207,6 @@ class Finite_optimal_management():
         ax.plot(self.time - 1, self.end_energy, 'ro')
         optimal_dispatch_x, optimal_dispatch_y = np.array(self.optimal_dispatch).T
         ax.plot(optimal_dispatch_x, optimal_dispatch_y, 'black')
+
 
 
