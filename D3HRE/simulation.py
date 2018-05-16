@@ -10,7 +10,17 @@ from D3HRE.core.battery_models import min_max_model, Soc_model_variable_load, Ba
 from D3HRE.core.weather_data_download import resource_df_download_and_process
 from D3HRE.core.wind_turbine_model import power_from_turbine, resistance_power
 from D3HRE.core.mission_utility import Mission
+from D3HRE.core.navigation_utility import ocean_current_processing
 
+
+from os import path
+import logging
+from logging.config import fileConfig
+log_file_path = path.join(path.dirname(path.abspath(__file__)), 'log.config')
+handler = logging.FileHandler('simulation.log')
+fileConfig(log_file_path)
+logger = logging.getLogger()
+logger.addHandler(handler)
 
 class Task():
 
@@ -18,15 +28,31 @@ class Task():
         self.mission = mission
         self.vehicle = vehicle
         self.power_consumption_list = power_consumption_list
+
         self.get_load_demand()
+
+
+    def get_ocean_current(self):
+        self.ocean_current_df = ocean_current_processing(self.mission.df)
+        pass
 
     def get_hotel_load(self, strategy='normal'):
         hotel = HotelLoad(self.mission, self.power_consumption_list, strategy)
         self.hotel_load = hotel.generate_power_consumption_timeseries()
         return self.hotel_load
 
-    def get_propulsion_load(self):
-        self.prop_load = self.vehicle.prop_power()
+    def get_propulsion_load(self, current=True):
+        if current != True:
+            self.prop_load = self.vehicle.prop_power()
+        else:
+            self.get_ocean_current()
+            prop_power_list = []
+            for v in self.ocean_current_df.Vs:
+                self.vehicle.speed = v
+                prop_power_list.append(self.vehicle.prop_power())
+
+            self.prop_load = pd.Series(index=self.mission.df, data=prop_power_list)
+            print(prop_power_list)
         return self.prop_load
 
     def get_load_demand(self):
