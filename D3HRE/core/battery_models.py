@@ -159,6 +159,8 @@ class Battery():
             self.waste_history = waste_history
             self.use_history = use_history
 
+
+
     def battery_history(self):
         history = np.vstack((
                     np.array(self.SOC),
@@ -172,6 +174,16 @@ class Battery():
     def lost_power_supply_probability(self):
         LPSP = 1 - self.unmet_history.count(0) / len(self.energy_history)
         return LPSP
+
+
+class Battery_managed(Battery):
+
+    def __init__(self, capacity, config={}, management='default'):
+        Battery.__init__(self, capacity, config)
+
+
+
+
 
 class Soc_model_variable_load():
 
