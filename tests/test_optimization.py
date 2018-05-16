@@ -76,11 +76,15 @@ config = {'load': {'prop_load': {'prop_eff': 0.7,
 
 task = Task(test_mission, test_ship, power_consumption_list)
 
-con_mix_opt = Constraint_mixed_objective_optimisation(task, config=config)
+
 
 def test_constraint_mixed_objective_optimisation():
-    con_mix_opt.run()
-    pass
+    con_mix_opt = Constraint_mixed_objective_optimisation(task, config=config)
+    mix_opt = Mixed_objective_optimization_function(task, config=config)
+    champion, champion_x = con_mix_opt.run()
+    for opt_x, constraint_x in zip(champion_x, mix_opt.constraints()):
+        assert opt_x <= constraint_x
+
 
 
 def test_optimization():
