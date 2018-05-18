@@ -35,17 +35,20 @@ class Task():
         return self.hotel_load
 
     def get_propulsion_load(self, current=True):
-        if current != True:
+        if current == False:
             self.prop_load = self.vehicle.prop_power()
         else:
             self.get_ocean_current()
-            prop_power_list = []
-            for v in self.ocean_current_df.Vs:
-                self.vehicle.speed = v
-                prop_power_list.append(self.vehicle.prop_power())
+            if self.ocean_current_df.Vs.isnull().values.any():
+                print('No current data from database, fallback on no current')
+                self.prop_load = self.vehicle.prop_power()
+            else:
+                prop_power_list = []
+                for v in self.ocean_current_df.Vs:
+                    self.vehicle.speed = v
+                    prop_power_list.append(self.vehicle.prop_power())
 
-            self.prop_load = pd.Series(index=self.mission.df, data=prop_power_list)
-            print(prop_power_list)
+                self.prop_load = pd.Series(index=self.mission.df, data=prop_power_list)
         return self.prop_load
 
     def get_load_demand(self):
