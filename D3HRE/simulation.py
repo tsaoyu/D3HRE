@@ -48,7 +48,7 @@ class Task():
                     self.vehicle.speed = v
                     prop_power_list.append(self.vehicle.prop_power())
 
-                self.prop_load = pd.Series(index=self.mission.df, data=prop_power_list)
+                self.prop_load = pd.Series(index=self.mission.df.index, data=prop_power_list)
         return self.prop_load
 
     def get_load_demand(self):
