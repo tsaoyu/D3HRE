@@ -13,14 +13,7 @@ from D3HRE.core.mission_utility import Mission
 from D3HRE.core.navigation_utility import ocean_current_processing
 
 
-from os import path
-import logging
-from logging.config import fileConfig
-log_file_path = path.join(path.dirname(path.abspath(__file__)), 'log.config')
-handler = logging.FileHandler('simulation.log')
-fileConfig(log_file_path)
-logger = logging.getLogger()
-logger.addHandler(handler)
+
 
 class Task():
 
