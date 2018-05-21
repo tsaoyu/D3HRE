@@ -54,6 +54,52 @@ class Absolute_follow_management():
         return this_dispatch
 
 
+class Dynamic_environment():
+
+    def __init__(self, battery, resource, management):
+        self.battery = battery
+        self.resource = resource
+        self.management = management
+
+    def observation(self):
+        return self.battery.state()
+
+    def step(self, demand, power):
+        self.battery.step(demand, power)
+
+    def step_over_time(self):
+        if self.management.type == 'predictive':
+            frequency = self.management.frequency
+            intervals = len(self.resource) // frequency
+            remaining = len(self.resource) % frequency
+
+            for i in intervals:
+                power_in_period = self.resource[i*frequency: (i+1)*frequency]
+                demand = self.management(self.observation())
+                for power in power_in_period:
+                    self.step(demand, power)
+
+            power_in_period = self.resource[-remaining:]
+            demand = self.management(self.observation())
+            for power in power_in_period:
+                self.step(demand, power)
+
+
+        elif self.management.type == 'global':
+            demand = self.management(self.battery, self.resource())
+            for power in self.resource:
+                self.step(demand, power)
+
+
+        elif self.management.type == 'reactive':
+            demand = self.management(self.observation(), self.resource())
+            for power in self.resource:
+                self.step(demand, power)
+        else:
+            print('I don\'t know how to handle this type of management!')
+
+    def simulation_result(self):
+        return self.battery.history()
 
 class Finite_optimal_management():
 
