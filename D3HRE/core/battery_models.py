@@ -178,10 +178,9 @@ class Battery():
 
 class Battery_managed():
 
-    def __init__(self, capacity, resource, config={}):
+    def __init__(self, capacity, config={}):
         self.capacity = capacity
         self.config = config
-        self.resource = resource
         self.set_parameters()
         self.init_history()
         self.init_simulation()
@@ -252,7 +251,7 @@ class Battery_managed():
 
 
     def history(self):
-        battery_history = np.vstack((
+        battery_history = np.hstack((
                     np.array(self.SOC),
                     np.array(self.energy_history),
                     np.array(self.unmet_history),
@@ -262,7 +261,10 @@ class Battery_managed():
         return battery_history
 
     def state(self):
-        return self.energy
+        battery_state = {'current_energy': self.energy, 'usable_capacity':self.DOD * self.capacity}
+        return battery_state
+
+
 
 
 

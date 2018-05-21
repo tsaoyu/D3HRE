@@ -45,13 +45,74 @@ def construct_environment_demo(power_dataframe, battery_capacity):
     wall = vis.Polygon(wall_points)
     return wall, higher_hole, lower_hole
 
-class Absolute_follow_management():
 
-    def __init__(self, power_series, battery_capacity):
+class Management_base():
+
+    def __init__(self):
+        self.type = 'base'
+
+    def manage(self):
         pass
 
-    def dispatch(self):
-        return this_dispatch
+    def update(self):
+        pass
+
+class Absolute_follow_management():
+    """
+    Absolute follow management as the name indicates, it use all the power that
+    is available that the moment. The demand according to this management strategy
+    is an absolute follow of resources.
+    """
+    def __init__(self):
+        self.type = 'reactive'
+
+    def manage(self):
+        """
+        :return: a list of demand which is exact the same as resources
+        """
+        return self.resources
+
+    def update(self, observation, resources):
+        """
+        Update internal variables.
+        :param observation: provided but will not be used
+        :param resources: list in W energy that supplied from the HRES
+        """
+        self.resources = resources
+        pass
+
+class Reactive_follow_management():
+
+    def __init__(self, demand):
+        self.type = 'reactive'
+        self.resources_history = []
+        self.demand = demand
+        self.time_step = 0
+
+    def manage(self):
+
+        if self.demand[self.time_step] <= self.resources[self.time_step]:
+            supply = self.demand[self.time_step]
+        elif self.demand[self.time_step] > self.resources[self.time_step]:
+            difference = self.demand[self.time_step] - self.resources[self.time_step]
+            if self.observation.current_energy - difference > self.observation.usable_capacity:
+                supply = self.demand[self.time_step]
+            else:
+                supply = 0
+
+        return supply
+
+    def update(self, observation, resources):
+        """
+
+        :param observation: battery
+        :param resources:
+        :return:
+        """
+        self.observation = observation
+        self.resources = resources
+        self.resources_history.append(resources)
+        self.time_step += 1
 
 
 class Dynamic_environment():
@@ -64,8 +125,8 @@ class Dynamic_environment():
     def observation(self):
         return self.battery.state()
 
-    def step(self, demand, power):
-        self.battery.step(demand, power)
+    def step(self, supply, power):
+        self.battery.step(supply, power)
 
     def step_over_time(self):
         if self.management.type == 'predictive':
@@ -75,31 +136,37 @@ class Dynamic_environment():
 
             for i in intervals:
                 power_in_period = self.resource[i*frequency: (i+1)*frequency]
-                demand = self.management(self.observation())
+                supply = self.management.udpate(self.observation())
                 for power in power_in_period:
-                    self.step(demand, power)
+                    self.step(supply, power)
 
             power_in_period = self.resource[-remaining:]
-            demand = self.management(self.observation())
+            self.management.update(self.observation())
+            supply = self.management.manage()
             for power in power_in_period:
-                self.step(demand, power)
+                self.step(supply, power)
 
 
         elif self.management.type == 'global':
-            demand = self.management(self.battery, self.resource())
+            self.management.update(self.battery, self.resource)
+            supply = self.management.manage()
             for power in self.resource:
-                self.step(demand, power)
+                self.step(supply, power)
 
 
         elif self.management.type == 'reactive':
-            demand = self.management(self.observation(), self.resource())
+            self.management.update(self.observation(), self.resource)
+            supply = self.management.manage()
             for power in self.resource:
-                self.step(demand, power)
+                self.step(supply, power)
         else:
             print('I don\'t know how to handle this type of management!')
 
     def simulation_result(self):
         return self.battery.history()
+
+
+
 
 class Finite_optimal_management():
 
