@@ -266,11 +266,6 @@ class Battery_managed():
 
 
 
-
-
-
-
-
 class Soc_model_variable_load():
 
     def __init__(self, battery, power, load):

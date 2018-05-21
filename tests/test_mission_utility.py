@@ -25,6 +25,7 @@ test_mission = get_mission('2014-01-01', test_route, 2)
 def test_hash_value():
     assert hash_value(test_route)[:7] == 'fc34214'
     assert hash_value(test_mission)[:7] == 'c675217'
+    print(hash_value(test_mission)[:7] )
 
 def test_variable_speed():
     """
