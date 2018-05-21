@@ -176,10 +176,94 @@ class Battery():
         return LPSP
 
 
-class Battery_managed(Battery):
+class Battery_managed():
 
-    def __init__(self, capacity, config={}, management='default'):
-        Battery.__init__(self, capacity, config)
+    def __init__(self, capacity, resource, config={}):
+        self.capacity = capacity
+        self.config = config
+        self.resource = resource
+        self.set_parameters()
+        self.init_history()
+        self.init_simulation()
+
+
+    def set_parameters(self):
+        try :
+            self.depth_of_discharge = self.config['simulation']['battery']['DOD']
+            self.discharge_rate = self.config['simulation']['battery']['sigma']
+            self.battery_eff = self.config['simulation']['battery']['eta_in']
+            self.discharge_eff = self.config['simulation']['battery']['eta_out']
+            self.init_charge =  self.config['simulation']['battery']['B0']
+            self.DOD = self.depth_of_discharge
+
+
+        except KeyError:
+            print('Parameter is not found in config file, default values are used.')
+            self.depth_of_discharge = 1
+            self.discharge_rate = 0.005
+            self.battery_eff = 0.9
+            self.discharge_eff = 0.8
+            self.init_charge = 1
+            self.DOD = self.depth_of_discharge
+
+    def init_simulation(self):
+        self.energy = self.init_charge * self.capacity
+
+    def init_history(self):
+        self.supply_history = []
+        self.waste_history = []
+        self.unmet_history = []
+        self.energy_history = []
+        self.SOC = []
+
+
+    def step(self, demand, power):
+        if demand >= power:
+            self.supply_history.append(power)
+            self.unmet_history.append(0)
+            energy_new = self.energy * (1 - self.discharge_rate) + (demand - power) * self.battery_eff
+            if energy_new < self.capacity:
+                self.energy = energy_new  # battery energy got update
+                self.waste_history.append(0)
+            else:
+                self.waste_history.append(demand - power)
+                self.energy = self.energy
+
+        elif demand < power:
+            self.energy_new = self.energy * (1 - self.discharge_rate) + (demand - power) / self.discharge_eff
+            if self.energy_new > (1 - self.DOD) * self.capacity:
+                self.energy = self.energy_new
+                self.unmet_history.append(0)
+                self.waste_history.append(0)
+                self.supply_history.append(power)
+            elif self.energy * (1 - self.discharge_rate) + demand * self.battery_eff < self.capacity:
+                self.energy = self.energy * (1 - self.discharge_rate) + demand * self.battery_eff
+                self.unmet_history.append(power - demand)
+                self.supply_history.append(0)
+                self.waste_history.append(0)
+            else:
+                self.unmet_history.append(power - demand)
+                self.supply_history.append(0)
+                self.waste_history.append(demand)
+                self.energy = self.energy
+
+        self.supply_history.append(self.energy)
+        self.SOC.append(self.energy/self.capacity)
+
+
+    def history(self):
+        battery_history = np.vstack((
+                    np.array(self.SOC),
+                    np.array(self.energy_history),
+                    np.array(self.unmet_history),
+                    np.array(self.waste_history),
+                    np.array(self.supply_history)
+        ))
+        return battery_history
+
+    def state(self):
+        return self.energy
+
 
 
 
