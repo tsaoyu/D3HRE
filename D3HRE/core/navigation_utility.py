@@ -2,14 +2,6 @@ import math
 import numpy as np
 import xarray as xr
 
-from os import path
-import logging
-from logging.config import fileConfig
-log_file_path = path.join(path.dirname(path.abspath(__file__)), '../log.config')
-handler = logging.FileHandler('navigation.log')
-fileConfig(log_file_path)
-logger = logging.getLogger()
-logger.addHandler(handler)
 
 
 def calculate_initial_compass_bearing(pointA, pointB):
@@ -132,17 +124,12 @@ def ocean_current_processing(df):
     dataframe['current_v'] = v_speed_list
 
     if dataframe.isnull().values.any():
-        logger.info('Missing data in ocean current, backward fill used')
         number_of_missing = dataframe.current_u.isnull().sum().sum()
-        logger.info('There is/are {} missing ocean current.'.format(number_of_missing))
         dataframe['current_u'].bfill(inplace=True)
         dataframe['current_v'].bfill(inplace=True)
 
     if dataframe.isnull().values.any():
-        logger.info('Data still missing in ocean current, forward fill used')
-        logger.warning('Check data availability on the ocean current now!')
         number_of_missing = dataframe.current_u.isnull().sum()
-        logger.info('There is/are {} missing ocean current.'.format(number_of_missing))
         dataframe['current_u'].ffill(inplace=True)
         dataframe['current_v'].ffill(inplace=True)
 
