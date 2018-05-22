@@ -14,3 +14,8 @@ def hash_value(data):
     hashId = hashlib.md5()
     hashId.update(repr(data).encode('utf-8'))
     return hashId.hexdigest()
+
+def hash_raw(data):
+    hashId = hashlib.md5()
+    hashId.update(repr(data).encode('utf-8'))
+    return hashId
