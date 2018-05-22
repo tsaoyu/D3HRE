@@ -1,6 +1,6 @@
 from tests.test_env import *
 
-from D3HRE.management import Dynamic_environment, Reactive_follow_management, Absolute_follow_management
+from D3HRE.management import Dynamic_environment, Reactive_follow_management, Absolute_follow_management, Finite_horizon_optimal_management
 from D3HRE.optimization import Constraint_mixed_objective_optimisation
 from D3HRE.simulation import Reactive_simulation
 from D3HRE.core.battery_models import Battery_managed
@@ -74,23 +74,23 @@ def test_absolute_follow_managemet():
     management = Absolute_follow_management()
     b1 = battery.copy()
     env = Dynamic_environment(b1, resource, management)
-
     env.step_over_time()
-
     print(env.simulation_result())
 
 def test_reactive_follow_management():
 
     management = Reactive_follow_management(demand)
-
     b2 = battery.copy()
-
     env = Dynamic_environment(b2, resource, management)
-
     env.step_over_time()
-
     print(env.simulation_result())
 
 def test_global_finite_horizon_optimal_management():
-    pass
+    management = Finite_horizon_optimal_management(resource.index, config=config)
+    b3 = battery.copy()
+    env = Dynamic_environment(b3, resource, management)
+    env.step_over_time()
+    print(env.simulation_result())
+
+
 

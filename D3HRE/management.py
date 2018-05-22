@@ -125,14 +125,21 @@ class Reactive_follow_management():
 
 class Finite_horizon_optimal_management():
 
-    def __init__(self, config={}):
+    def __init__(self, resource_index, config={}):
         self.type = 'global'
+        self.resource_index = resource_index
         self.config = config
 
     def manage(self):
         man = Finite_optimal_management(self.resources, self.battery.capacity, config=self.config)
-        man.find_optimal_dispatch()
-
+        optimal_dispatch = man.find_optimal_dispatch()
+        time, cum_energy = np.array(optimal_dispatch).T
+        optimal_dispatch_df = pd.DataFrame(index=[self.resource_index[int(t)] for t in time], data=cum_energy,
+                                           columns=['Cum_energy'])
+        optimal_dispatch_df = optimal_dispatch_df.resample('1H').interpolate(method='linear')
+        optimal_dispatch_df['Power'] = optimal_dispatch_df['Cum_energy'].diff().bfill()
+        supply = optimal_dispatch_df['Power'].tolist()
+        return supply
 
     def update(self, battery, resources):
         self.battery = battery
@@ -175,8 +182,10 @@ class Dynamic_environment():
         elif self.management.type == 'global':
             self.management.update(self.battery, self.resource)
             supply = self.management.manage()
+            t = 0
             for power in self.resource:
-                self.step(supply, power)
+                self.step(supply[t], power)
+                t = t + 1
 
 
         elif self.management.type == 'reactive':

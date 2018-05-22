@@ -16,3 +16,4 @@ codecov
 PyResis
 cloudpickle
 ruamel.yaml
+visilibity
