@@ -176,6 +176,7 @@ class Battery():
         return LPSP
 
 
+
 class Battery_managed():
 
     def __init__(self, capacity, config={}):
@@ -264,6 +265,11 @@ class Battery_managed():
         battery_state = {'current_energy': self.energy, 'usable_capacity':self.DOD * self.capacity}
         return battery_state
 
+    def copy(self):
+        return Battery_managed(self.capacity, self.config)
+
+    def deepcopy(self, memodict={}):
+        pass
 
 
 class Soc_model_variable_load():
