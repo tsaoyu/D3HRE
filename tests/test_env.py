@@ -8,9 +8,37 @@ from D3HRE.simulation import Task
 from PyResis import propulsion_power
 
 test_route =  np.array([[  10.69358 ,  -178.94713892], [  11.06430687, +176.90022735]])
+# -------------------------------------------------------------------------------------
+#  The route is the most basic concept in D3HRE. The route of a vehicle is defined as
+#  an array (numpy.ndarray) of coordinates. It can either from route planning software
+#  (e.g. OpenCPN), or hand picked coordinates, or even from shortest path planning.
+#
+#  np.array([[lat1, lon1], [lat2,lon2], ...])
+# -------------------------------------------------------------------------------------
+
+
+test_mission = Mission('2014-01-01', test_route, 2)
+# -------------------------------------------------------------------------------------
+#  When there is a route there is a mission. Mission is about how to go through certain
+#  route. Basic information on when an how to go through the route is required to form
+#  a mission. Start time, route and speed can define this.
+#
+#
+# -------------------------------------------------------------------------------------
+
+
+
 
 test_ship = propulsion_power.Ship()
 test_ship.dimension(5.72, 0.248, 0.76, 1.2, 5.72/(0.549)**(1/3),0.613)
+# -------------------------------------------------------------------------------------
+#  To accomplish
+#
+#
+#
+#
+# -------------------------------------------------------------------------------------
+
 
 
 power_consumption_list = {'single_board_computer': {'power': [2, 10], 'duty_cycle': 0.5},
@@ -22,7 +50,6 @@ power_consumption_list = {'single_board_computer': {'power': [2, 10], 'duty_cycl
                               'temp_sensor': {'power': [0.04], 'duty_cycle': 1},
                               'wind_sensor': {'power': [0.67, 1.1], 'duty_cycle': 0.5},
                               'servo_motors': {'power': [0.4, 1.35], 'duty_cycle': 0.5},
-
                               'radio_transmitter': {'power': [0.5, 20], 'duty_cycle': 0.2}}
 
 
@@ -77,5 +104,5 @@ config = {'load': {'prop_load': {'prop_eff': 0.7,
 
 
 
-test_mission = Mission('2014-01-01', test_route, 2)
+
 test_task = Task(test_mission, test_ship, power_consumption_list)

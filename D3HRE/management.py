@@ -93,15 +93,17 @@ class Reactive_follow_management():
         self.type = 'reactive'
         self.resources_history = []
         self.demand = demand
-        self.time_step = 0
+        self.time_step = -1
+        # This is because we always update time step first
+
 
     def manage(self):
 
-        if self.demand[self.time_step] <= self.resources[self.time_step]:
+        if self.demand[self.time_step] <= self.resources:
             supply = self.demand[self.time_step]
-        elif self.demand[self.time_step] > self.resources[self.time_step]:
-            difference = self.demand[self.time_step] - self.resources[self.time_step]
-            if self.observation.current_energy - difference > self.observation.usable_capacity:
+        elif self.demand[self.time_step]> self.resources:
+            difference = self.demand[self.time_step] - self.resources
+            if self.observation['current_energy'] - difference > self.observation['usable_capacity']:
                 supply = self.demand[self.time_step]
             else:
                 supply = 0
@@ -119,6 +121,21 @@ class Reactive_follow_management():
         self.resources = resources
         self.resources_history.append(resources)
         self.time_step += 1
+
+class Finite_horizon_optimal_management():
+
+    def __init__(self, config={}):
+        self.type = 'global'
+        self.config = config
+
+    def manage(self):
+        man = Finite_optimal_management(self.resources, self.battery.capacity, config=self.config)
+        man.find_optimal_dispatch()
+
+
+    def update(self, battery, resources):
+        self.battery = battery
+        self.resources = resources
 
 
 class Dynamic_environment():
@@ -155,17 +172,19 @@ class Dynamic_environment():
 
 
         elif self.management.type == 'global':
-            self.management.update(self.battery, self.resource_list)
+            self.management.update(self.battery, self.resource)
             supply = self.management.manage()
             for power in self.resource:
                 self.step(supply, power)
 
 
         elif self.management.type == 'reactive':
-            self.management.update(self.observation(), self.resource_list)
-            supply = self.management.manage()
+            t = 0
             for power in self.resource:
+                self.management.update(self.observation(), self.resource_list[t])
+                supply = self.management.manage()
                 self.step(supply, power)
+                t = t + 1
         else:
             print('I don\'t know how to handle this type of management!')
 
