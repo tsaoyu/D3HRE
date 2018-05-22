@@ -18,12 +18,13 @@ rea_sim = Reactive_simulation(test_task, config=config)
 
 result_df = rea_sim.result(solar_area, wind_area, battery_capacity)
 
-resource = (result_df.wind_power + result_df.solar_power).tolist()
+resource = (result_df.wind_power + result_df.solar_power)
 
 demand = (result_df.Load_demand).tolist()
 
 
 def test_reactive_follow_management():
+
     management = Reactive_follow_management(demand)
 
     env = Dynamic_environment(battery, resource, management)

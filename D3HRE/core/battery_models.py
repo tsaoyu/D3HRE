@@ -212,7 +212,7 @@ class Battery_managed():
         self.supply_history = []
         self.waste_history = []
         self.unmet_history = []
-        self.energy_history = []
+        self.battery_energy_history = []
         self.SOC = []
 
 
@@ -246,14 +246,14 @@ class Battery_managed():
                 self.waste_history.append(demand)
                 self.energy = self.energy
 
-        self.supply_history.append(self.energy)
+        self.battery_energy_history.append(self.energy)
         self.SOC.append(self.energy/self.capacity)
 
 
     def history(self):
-        battery_history = np.hstack((
+        battery_history = np.vstack((
                     np.array(self.SOC),
-                    np.array(self.energy_history),
+                    np.array(self.battery_energy_history),
                     np.array(self.unmet_history),
                     np.array(self.waste_history),
                     np.array(self.supply_history)

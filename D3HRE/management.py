@@ -84,6 +84,12 @@ class Absolute_follow_management():
 class Reactive_follow_management():
 
     def __init__(self, demand):
+        if isinstance(demand, list):
+            self.demand = demand
+        elif isinstance(demand, pd.Series):
+            self.demand = demand.tolist()
+        else:
+            print('Sorry, I do not accept this kind of demand.')
         self.type = 'reactive'
         self.resources_history = []
         self.demand = demand
@@ -120,6 +126,7 @@ class Dynamic_environment():
     def __init__(self, battery, resource, management):
         self.battery = battery
         self.resource = resource
+        self.resource_list = self.resource.tolist()
         self.management = management
 
     def observation(self):
@@ -148,14 +155,14 @@ class Dynamic_environment():
 
 
         elif self.management.type == 'global':
-            self.management.update(self.battery, self.resource)
+            self.management.update(self.battery, self.resource_list)
             supply = self.management.manage()
             for power in self.resource:
                 self.step(supply, power)
 
 
         elif self.management.type == 'reactive':
-            self.management.update(self.observation(), self.resource)
+            self.management.update(self.observation(), self.resource_list)
             supply = self.management.manage()
             for power in self.resource:
                 self.step(supply, power)
@@ -163,7 +170,11 @@ class Dynamic_environment():
             print('I don\'t know how to handle this type of management!')
 
     def simulation_result(self):
-        return self.battery.history()
+        battery_history = self.battery.history()
+        history = pd.DataFrame(columns=['SOC', 'Battery', 'Unmet', 'Waste', 'Supply'],
+                               index= self.resource.index,
+                               data=battery_history.T)
+        return history
 
 
 
