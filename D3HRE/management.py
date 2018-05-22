@@ -93,8 +93,7 @@ class Reactive_follow_management():
         self.type = 'reactive'
         self.resources_history = []
         self.demand = demand
-        self.time_step = -1
-        # This is because we always update time step first
+        self.time_step = 0
 
 
     def manage(self):
@@ -108,6 +107,8 @@ class Reactive_follow_management():
             else:
                 supply = 0
 
+        self.time_step += 1
+
         return supply
 
     def update(self, observation, resources):
@@ -120,7 +121,7 @@ class Reactive_follow_management():
         self.observation = observation
         self.resources = resources
         self.resources_history.append(resources)
-        self.time_step += 1
+
 
 class Finite_horizon_optimal_management():
 

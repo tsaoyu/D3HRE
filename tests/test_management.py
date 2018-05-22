@@ -83,10 +83,14 @@ def test_reactive_follow_management():
 
     management = Reactive_follow_management(demand)
 
-    b2= battery.copy()
+    b2 = battery.copy()
 
     env = Dynamic_environment(b2, resource, management)
 
     env.step_over_time()
 
     print(env.simulation_result())
+
+def test_global_finite_horizon_optimal_management():
+    pass
+
