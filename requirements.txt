@@ -17,3 +17,4 @@ PyResis
 cloudpickle
 ruamel.yaml
 visilibity
+requests==2.18.4
