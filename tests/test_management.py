@@ -94,3 +94,4 @@ def test_global_finite_horizon_optimal_management():
 
 
 
+test_global_finite_horizon_optimal_management()
