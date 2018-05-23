@@ -7,7 +7,6 @@ netCDF4
 ephem
 seaborn
 gpxpy
-requests
 pygmo==2.6
 nvector
 pytest
