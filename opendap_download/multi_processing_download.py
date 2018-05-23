@@ -1,4 +1,5 @@
 __author__ = "Jan Urbansky"
+__contributor__ = "Yu Cao"
 
 # TODO: Change and describe structure of the links that have to be provided.
 # TODO: Proper readme with examples.
