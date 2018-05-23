@@ -129,12 +129,23 @@ class Finite_horizon_optimal_management():
         self.type = 'global'
         self.resource_index = resource_index
         self.config = config
+        self.sample_period = '12H'
 
     def manage(self):
-        man = Finite_optimal_management(self.resources, self.battery.capacity, config=self.config)
+        resources = self.resources.resample(self.sample_period).sum()
+        time_index = pd.Series(index=self.resource_index, data=None)
+        resampled_time_index = time_index.resample(self.sample_period).mean()
+        if resources.iloc[-1] != self.resources.cumsum()[-1]:
+            resources.set_value(self.resources.index[-1], self.resources.cumsum().iloc[-1])
+            resampled_time_index.set_value(self.resources.index[-1], None)
+        # Make sure the length of resampled resources have the same end point as resources.
+
+        man = Finite_optimal_management(resources, self.battery.capacity, config=self.config)
         optimal_dispatch = man.find_optimal_dispatch()
         time, cum_energy = np.array(optimal_dispatch).T
-        optimal_dispatch_df = pd.DataFrame(index=[self.resource_index[int(t)] for t in time], data=cum_energy,
+
+
+        optimal_dispatch_df = pd.DataFrame(index=[resampled_time_index.index[int(t)] for t in time], data=cum_energy,
                                            columns=['Cum_energy'])
         optimal_dispatch_df = optimal_dispatch_df.resample('1H').interpolate(method='linear')
         optimal_dispatch_df['Power'] = optimal_dispatch_df['Cum_energy'].diff().bfill()
@@ -211,6 +222,15 @@ class Dynamic_environment():
 class Finite_optimal_management():
 
     def __init__(self, power_series, battery_capacity, strategy='full-empty', epsilon=0.00001, config={}):
+        """
+        The constructor takes two compulsory and three optional arguments.
+
+        :param power_series: Series of power sampled at one hour interval
+        :param battery_capacity: float Wh designed capacity of the battery
+        :param strategy: str how much energy is there in the begin and the end of the management
+        :param epsilon: float precision of the management
+        :param config: dict configuration file
+        """
         self.power_series = power_series
         self.config = config
         self.time = len(self.power_series)

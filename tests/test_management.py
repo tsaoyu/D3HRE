@@ -28,13 +28,13 @@ con_mix_opt = Constraint_mixed_objective_optimisation(test_task, config=config)
 champion, champion_x = con_mix_opt.run()
 solar_area, wind_area, battery_capacity = champion_x
 
+# ---------------------------------------------------------------------------------------
 #
 #
 #
 #
 #
-#
-#
+# ---------------------------------------------------------------------------------------
 
 battery = Battery_managed(battery_capacity, config=config)
 
