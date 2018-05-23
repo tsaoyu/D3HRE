@@ -171,8 +171,8 @@ class DownloadManager(object):
         try:
             # The merra portal moved the authentication to the download level. Before this change you had to
             # provide username and password on the overview page. For example:
-            # goldsmr4.sci.gsfc.nasa.gov/opendap/MERRA2/M2T1NXSLV.5.12.4/
-            # authentication_url = 'https://goldsmr4.sci.gsfc.nasa.gov/opendap/MERRA2/M2T1NXSLV.5.12.4/1980/01/MERRA2_100.tavg1_2d_slv_Nx.19800101.nc4.ascii?U2M[0:1:1][0:1:1][0:1:1]'
+            # https://goldsmr4.gesdisc.eosdis.nasa.gov/opendap/MERRA2/
+            # authentication_url = 'https://goldsmr4.gesdisc.eosdis.nasa.gov/opendap/MERRA2/M2T1NXSLV.5.12.4/1980/01/MERRA2_100.tavg1_2d_slv_Nx.19800101.nc4.ascii?U2M[0:1:1][0:1:1][0:1:1]'
             # Changes:
             # Authenticate with the first url in the links.
             # Request the website and initialiaze the BasicAuth. This will populate the auth_cookie_jar
@@ -196,7 +196,7 @@ class DownloadManager(object):
 
 if __name__ == '__main__':
     link = [
-        'http://goldsmr4.sci.gsfc.nasa.gov:80/opendap/MERRA2/M2T1NXSLV.5.12.4/2014/01/MERRA2_400.tavg1_2d_slv_Nx.20140101.nc4.nc4?U2M[0:1:5][358:1:360][573:1:575],U10M[0:1:5][358:1:360][573:1:575],U50M[0:1:5][358:1:360][573:1:575],V2M[0:1:5][358:1:360][573:1:575],V10M[0:1:5][358:1:360][573:1:575],V50M[0:1:5][358:1:360][573:1:575]']
+    'https://goldsmr4.gesdisc.eosdis.nasa.gov/opendap/MERRA2/M2T1NXSLV.5.12.4/2014/01/MERRA2_400.tavg1_2d_slv_Nx.20140101.nc4.nc4?U2M[0:1:5][358:1:360][573:1:575],U10M[0:1:5][358:1:360][573:1:575],U50M[0:1:5][358:1:360][573:1:575],V2M[0:1:5][358:1:360][573:1:575],V10M[0:1:5][358:1:360][573:1:575],V50M[0:1:5][358:1:360][573:1:575]']
 
     logging.basicConfig(level=logging.DEBUG, handlers=[logging.StreamHandler()])
     dl = DownloadManager()
