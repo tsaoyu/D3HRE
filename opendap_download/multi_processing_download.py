@@ -12,6 +12,7 @@ from http import cookiejar
 import urllib.error
 import urllib.request
 import re
+import ruamel.yaml as yaml
 
 log = logging.getLogger('opendap_download')
 
