@@ -34,12 +34,16 @@ class Task():
         self.hotel_load = hotel.generate_power_consumption_timeseries()
         return self.hotel_load
 
-    def get_propulsion_load(self, current=False):
+    def get_propulsion_load(self, current=True):
         if current == False:
             self.prop_load = self.vehicle.prop_power()
         else:
-            self.get_ocean_current()
-            if self.ocean_current_df.Vs.isnull().values.any():
+            try:
+                self.get_ocean_current()
+            except FileNotFoundError:
+                print('No ocean current file found!')
+                self.ocean_current_df = None
+            if self.ocean_current_df.Vs.isnull().values.any() or self.ocean_current_df == None:
                 print('No current data from database, fallback on no current')
                 self.prop_load = self.vehicle.prop_power()
             else:
