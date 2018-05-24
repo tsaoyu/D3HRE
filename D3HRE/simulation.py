@@ -34,7 +34,7 @@ class Task():
         self.hotel_load = hotel.generate_power_consumption_timeseries()
         return self.hotel_load
 
-    def get_propulsion_load(self, current=True):
+    def get_propulsion_load(self, current=False):
         if current == False:
             self.prop_load = self.vehicle.prop_power()
         else:
