@@ -6,6 +6,7 @@ from math import radians, cos, sin, asin, sqrt
 from datetime import timedelta
 
 from D3HRE.core.get_hash import hash_value
+from D3HRE.core.dataframe_utility import full_day_cut
 
 def haversine(lon1, lat1, lon2, lat2):
     """
@@ -159,7 +160,7 @@ def get_mission(start_time, route, speed):
         start_time = pd.Timestamp(start_time)
     else:
         pass
-    position_df = position_dataframe(start_time, route, speed)
+    position_df = full_day_cut(position_dataframe(start_time, route, speed))
     return position_df
 
 
@@ -189,10 +190,23 @@ class Mission():
         self.route = route
         self.speed = speed
         self.df = get_mission(self.start_time, self.route, self.speed)
+        self.get_ID()
 
     def __str__(self):
-        return "This mission is start from {a} at {b} UTC.".format(a = self.route[0],
-                                                                  b = self.start_time)
+        return "This mission {ID} is start from {a} at {b} UTC.".format(
+            a=self.route[0], b=self.start_time, ID=self.ID)
+
+    def get_ID(self):
+        route_tuple = tuple(self.route.flatten().tolist())
+        if isinstance(self.speed, list):
+            speed_tuple = tuple(self.speed)
+        else:
+            speed_tuple = self.speed
+
+        ID_tuple = (self.start_time, route_tuple, speed_tuple)
+        self.ID = hash_value(ID_tuple)
+        pass
+
 
 
 
