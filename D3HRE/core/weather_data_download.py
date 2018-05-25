@@ -5,9 +5,8 @@ import pandas as pd
 import xarray as xr
 
 
-from passwords import *
+from data_config import *
 from opendap_download.multi_processing_download import DownloadManager
-from D3HRE.core.get_hash import hash_value
 from D3HRE.core.weather_data_processing import resource_df_processing
 
 
@@ -153,18 +152,22 @@ def download_URL(mission, data_set='solar', debug=False):
         return generated_URLs
 
 
-def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER_OF_CONNECTIONS):
+def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER_OF_CONNECTIONS, data_dir=DATA_DIR):
     """
     Resource dataFrame download function.
 
 
-    :param mission: (utc) time-indexed Pandas dataFrame contains lat, lon, speed and local_time
+    :type mission: object
+    :param mission: Mission object
     :param username: username of NASA earthdata portal
     :param password: password of NASA earthdata portal
     :param n: number of concurrent multiprocess download (adjust the number to avoid been banned)
     :return: raw resource dataFrame, time-indexed Pandas dataFrame including all requested field
     """
-    folder = 'MERRA2data/' + hash_value(mission)[0:7]
+    mission_df = mission.df
+    ID = mission.ID
+
+    folder = os.path.expanduser(data_dir + ID)
     file_name = folder + 'resource.pkl'
 
     # Check if compact pandas data frame have already processed
@@ -177,13 +180,13 @@ def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER
         download_manager = DownloadManager()
         download_manager.set_username_and_password(username, password)
         download_manager.download_path = folder + '/download_wind'
-        download_manager.download_urls = download_URL(mission, data_set='wind')
+        download_manager.download_urls = download_URL(mission_df, data_set='wind')
         if not os.path.exists(download_manager.download_path):
             print('Wind data not found, automatic download starting ...')
             download_manager.start_download(n)
 
         download_manager.download_path = folder + '/download_solar'
-        download_manager.download_urls = download_URL(mission, data_set='solar')
+        download_manager.download_urls = download_URL(mission_df, data_set='solar')
         if not os.path.exists(download_manager.download_path):
             print('Solar data not found, automatic download starting ...')
             download_manager.start_download(n)
@@ -201,7 +204,7 @@ def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER
             else:
                 print("Some wind data corrupted, redownload start")
                 download_manager.download_path = folder + '/download_wind'
-                URLS = download_URL(mission, data_set='wind')
+                URLS = download_URL(mission_df, data_set='wind')
                 url = []
                 for url_index in np.where(file_size<60000)[0].tolist():
                     url.append(URLS[url_index])
@@ -220,7 +223,7 @@ def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER
             else:
                 print("Some solar data corrupted, redownload start")
                 download_manager.download_path = folder + '/download_solar'
-                URLS = download_URL(mission, data_set='solar')
+                URLS = download_URL(mission_df, data_set='solar')
                 url = []
                 for url_index in np.where(file_size<20000)[0].tolist():
                     url.append(URLS[url_index])
@@ -233,7 +236,7 @@ def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER
 
             resource_df = pd.concat([solar_df, wind_df], axis=1)
             resource_df.reset_index(drop=True, inplace=True)
-            resource_df['utc'] = mission.index[1:]
+            resource_df['utc'] = mission_df.index[1:]
 
             resource_df.set_index('utc', inplace=True)
 
@@ -243,21 +246,22 @@ def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER
     return resource_df
 
 
+
 def resource_df_download_and_process(mission):
     """
     Process downloaded MEERA-2 dataFrame.
 
-    :param mission: time indexed Pandas dataFrame contains field of lat, lon, speed,
-        local_time, T2M, SWGDN, SWTDN, U2M, V2M
+    :param mission: Mission object
     :return:  time indexed Pandas dataFrame with additional field in temperature (degree C),
         kt(clearness index), V2 (wind speed at 2 metres height), true_wind_direction (degrees),
         heading (degrees), Va (apparent wind speed), apparent_wind_direction(degrees)
     """
     resource_df = resource_df_download(mission)
-    combined_df = pd.concat([mission, resource_df], axis=1).bfill()
+    combined_df = pd.concat([mission.df, resource_df], axis=1).bfill()
     # combine mission dataFrame and weather data (resource) dataFrame into a single one
     processed_resource_df = resource_df_processing(combined_df)
     return processed_resource_df
+
 
 if __name__ == '__main__':
     pass
