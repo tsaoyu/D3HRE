@@ -42,8 +42,8 @@ class Task():
                 self.get_ocean_current()
             except FileNotFoundError:
                 print('No ocean current file found!')
-                self.ocean_current_df = None
-            if self.ocean_current_df == None or self.ocean_current_df.Vs.isnull().values.any():
+                return self.prop_load
+            if self.ocean_current_df.Vs.isnull().values.any():
                 print('No current data from database, fallback on no current')
                 self.prop_load = self.vehicle.prop_power()
             else:
@@ -63,8 +63,8 @@ class Reactive_simulation(Task):
 
     def __init__(self, Task, config={}):
         self.Task = Task
-        self.df = full_day_cut(self.Task.mission.df)
-        self.resource_df = resource_df_download_and_process(self.df)
+        self.resource_df = resource_df_download_and_process(self.Task.mission)
+        self.df = self.Task.mission.df
         self.config = config
         self.set_parameter()
 
