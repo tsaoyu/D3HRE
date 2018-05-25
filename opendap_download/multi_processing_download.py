@@ -78,7 +78,6 @@ class DownloadManager(object):
     def read_credentials_from_yaml(self, file_path_to_yaml):
         with open(file_path_to_yaml, 'r') as f:
             credentials = yaml.load(f)
-            log.debug('Credentials: ' + str(credentials))
             self.set_username_and_password(credentials['username'], credentials['password'])
 
     def _mp_download_wrapper(self, url_item):
