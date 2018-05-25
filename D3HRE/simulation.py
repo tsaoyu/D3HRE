@@ -42,6 +42,7 @@ class Task():
                 self.get_ocean_current()
             except FileNotFoundError:
                 print('No ocean current file found!')
+                self.prop_load = self.vehicle.prop_power()
                 return self.prop_load
             if self.ocean_current_df.Vs.isnull().values.any():
                 print('No current data from database, fallback on no current')
