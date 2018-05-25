@@ -69,13 +69,15 @@ resource = (result_df.wind_power + result_df.solar_power)
 demand = (result_df.Load_demand).tolist()
 
 
+
 def test_absolute_follow_managemet():
 
     management = Absolute_follow_management()
     b1 = battery.copy()
     env = Dynamic_environment(b1, resource, management)
     env.step_over_time()
-    print(env.simulation_result())
+    env.simulation_result()
+
 
 def test_reactive_follow_management():
 
@@ -83,15 +85,11 @@ def test_reactive_follow_management():
     b2 = battery.copy()
     env = Dynamic_environment(b2, resource, management)
     env.step_over_time()
-    print(env.simulation_result())
+    env.simulation_result()
 
 def test_global_finite_horizon_optimal_management():
     management = Finite_horizon_optimal_management(resource.index, config=config)
     b3 = battery.copy()
     env = Dynamic_environment(b3, resource, management)
     env.step_over_time()
-    print(env.simulation_result())
-
-
-
-test_global_finite_horizon_optimal_management()
+    env.simulation_result()
