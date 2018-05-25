@@ -7,6 +7,7 @@ before_install:
 - openssl aes-256-cbc -K $encrypted_f8eda2ceeda5_key -iv $encrypted_f8eda2ceeda5_iv
   -in data_config.py.enc -out data_config.py -d
 - sudo apt-get install swig
+- mkdir ~/MERRA2/
 - cp ./tests/0d42588c08f99b9597ad878ae4b07202resource.pkl ~/MERRA2/
 install: pip install -r requirements.txt
 script: pytest --cov=. ./tests/

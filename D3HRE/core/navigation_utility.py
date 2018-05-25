@@ -1,6 +1,8 @@
 import math
 import numpy as np
 import xarray as xr
+import os.path
+from data_config import *
 
 
 
@@ -62,9 +64,10 @@ def get_current(df):
 
 
 
-def ocean_current_processing(df):
+def ocean_current_processing(df, file_dir = OSCAR_DIR):
 
     dataframe = df.copy()
+
 
     location_list = [tuple(x) for x in dataframe[['lat', 'lon']].values]
 
@@ -86,9 +89,10 @@ def ocean_current_processing(df):
 
 
 
-    def read_and_match_one_year_current(year, df):
+    def read_and_match_one_year_current(year, df, file_dir):
         dataframe = df[df.index.year == year]
-        dataset = xr.open_dataset('/home/tony/Downloads/oscar_vel{}.nc'.format(year))
+        dataset_file_dir = os.path.expanduser(file_dir+ 'oscar_vel{}.nc'.format(year))
+        dataset = xr.open_dataset(dataset_file_dir)
         time_index, lat_index, lon_index = dataframe.index, dataframe.lat.tolist(), (dataframe.lon + 200).tolist()
 
         u_speed_list = []
@@ -111,13 +115,13 @@ def ocean_current_processing(df):
         u_speed_list = []
         v_speed_list = []
         for year in year_range:
-            u_speed_one_year, v_speed_one_year = read_and_match_one_year_current(year, dataframe)
+            u_speed_one_year, v_speed_one_year = read_and_match_one_year_current(year, dataframe, file_dir)
             u_speed_list = u_speed_list + u_speed_one_year
             v_speed_list = v_speed_list + v_speed_one_year
 
 
     else:
-        u_speed_list, v_speed_list = read_and_match_one_year_current(start_year, dataframe)
+        u_speed_list, v_speed_list = read_and_match_one_year_current(start_year, dataframe, file_dir)
 
 
     dataframe['current_u'] = u_speed_list
