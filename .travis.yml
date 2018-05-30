@@ -5,10 +5,11 @@ python:
 - '3.6'
 before_install:
 - openssl aes-256-cbc -K $encrypted_555b1a8e5847_key -iv $encrypted_555b1a8e5847_iv
-  -in ./tests/.d3hre.enc -out ~/.d3hre -d
+  -in .d3hre.enc -out .d3hre -d
 - sudo apt-get install swig
 - mkdir ~/MERRA2/
 - cp ./tests/0d42588c08f99b9597ad878ae4b07202resource.pkl ~/MERRA2/
+- cp ./tests/.d3hre ~/ > /dev/null
 install: pip install -r requirements.txt
 script: pytest --cov=. ./tests/
 after_success: codecov
