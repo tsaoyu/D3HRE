@@ -9,7 +9,7 @@ before_install:
 - sudo apt-get install swig
 - mkdir ~/MERRA2/
 - cp ./tests/0d42588c08f99b9597ad878ae4b07202resource.pkl ~/MERRA2/
-- cp ./tests/.d3hre ~/ > /dev/null
+- cp ./tests/.d3hre ~/
 install: pip install -r requirements.txt
 script: pytest --cov=. ./tests/
 after_success: codecov
