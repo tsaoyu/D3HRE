@@ -1,15 +1,31 @@
 import glob
 import os.path
+import configparser
+import getpass
 import numpy as np
 import pandas as pd
 import xarray as xr
 
 
-from data_config import *
 from opendap_download.multi_processing_download import DownloadManager
 from D3HRE.core.weather_data_processing import resource_df_processing
 
 
+config = configparser.ConfigParser()
+config_file_path = os.path.expanduser('~/.d3hre')
+config.read(config_file_path)
+
+try:
+    USERNAME = config['MERRA2']['Username']
+    PASSWORD = config['MERRA2']['Password']
+except KeyError:
+    USERNAME = input('MERRA-2 Username:')
+    PASSWORD = getpass.getpass('MERRA-2 Password:')
+
+NUMBER_OF_CONNECTIONS = config['MERRA2']['Connections']
+MERRA2_DATA_DIR = config['MERRA2']['Datadir']
+
+OSCAR_DATA_DIR = config['OSCAR']['Datadir']
 
 
 def generate_single_download_link(start, end, lat_lon, data_set=None):
@@ -152,7 +168,7 @@ def download_URL(mission, data_set='solar', debug=False):
         return generated_URLs
 
 
-def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER_OF_CONNECTIONS, data_dir=DATA_DIR):
+def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER_OF_CONNECTIONS, data_dir=MERRA2_DATA_DIR):
     """
     Resource dataFrame download function.
 
