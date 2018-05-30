@@ -165,6 +165,9 @@ class Dynamic_environment():
         self.resource_list = self.resource.tolist()
         self.management = management
 
+    def reset(self):
+        pass
+
     def observation(self):
         return self.battery.state()
 
