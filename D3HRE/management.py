@@ -171,8 +171,19 @@ class Dynamic_environment():
     def observation(self):
         return self.battery.state()
 
+    def reward(self):
+        pass
+
+    def done(self):
+        pass
+
+    def info(self):
+        pass
+
+
     def step(self, supply, power):
         self.battery.step(supply, power)
+        return self.observation(), self.reward(), self.done(), self.info()
 
     def step_over_time(self):
         if self.management.type == 'predictive':
