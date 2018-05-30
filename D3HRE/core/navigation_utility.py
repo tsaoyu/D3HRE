@@ -2,7 +2,15 @@ import math
 import numpy as np
 import xarray as xr
 import os.path
-from data_config import *
+import configparser
+
+
+
+config = configparser.ConfigParser()
+config_file_path = os.path.expanduser('~/.d3hre')
+config.read(config_file_path)
+
+OSCAR_DIR = config['OSCAR']['Datadir']
 
 
 
