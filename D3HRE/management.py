@@ -164,8 +164,17 @@ class Dynamic_environment():
         self.resource = resource
         self.resource_list = self.resource.tolist()
         self.management = management
+        self.total_time_step = len(self.resource_list)
+        self.time_step = 0
 
     def reset(self):
+        """
+        Reset simulation in the battery from the very beginning.
+        :return:
+        """
+        self.time_step = 0
+        self.battery.init_simualtion()
+        self.battery.init_history()
         pass
 
     def observation(self):
@@ -175,7 +184,12 @@ class Dynamic_environment():
         pass
 
     def done(self):
+        if self.time_step < self.total_time_step:
+            return False
+        elif self.time_step == self.total_time_step:
+            return True
         pass
+
 
     def info(self):
         pass
@@ -183,6 +197,7 @@ class Dynamic_environment():
 
     def step(self, supply, power):
         self.battery.step(supply, power)
+        self.time_step += 1
         return self.observation(), self.reward(), self.done(), self.info()
 
     def step_over_time(self):
