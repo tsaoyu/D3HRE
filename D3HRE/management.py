@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 def construct_environment_demo(power_dataframe, battery_capacity):
     aggregated_power = power_dataframe.cumsum().Power
     aggregated_power_lower = []
@@ -19,11 +20,15 @@ def construct_environment_demo(power_dataframe, battery_capacity):
     # Construct the upper hole in a reverse order
     aggregated_power_higher.reverse()
     aggregated_power_higher.insert(0, aggregated_power_higher[-1])
-    aggregated_power_higher.insert(1, [aggregated_power_higher[0][0], aggregated_power_higher[1][1]])
+    aggregated_power_higher.insert(
+        1, [aggregated_power_higher[0][0], aggregated_power_higher[1][1]]
+    )
     del aggregated_power_higher[-1]
 
     # Construct the lower hole in the reverse order
-    aggregated_power_lower.append([aggregated_power_lower[-1][0], aggregated_power_lower[0][1]])
+    aggregated_power_lower.append(
+        [aggregated_power_lower[-1][0], aggregated_power_lower[0][1]]
+    )
     # close the hole
     # aggregated_power_lower.append(aggregated_power_lower[0])
 
@@ -46,8 +51,7 @@ def construct_environment_demo(power_dataframe, battery_capacity):
     return wall, higher_hole, lower_hole
 
 
-class Management_base():
-
+class Management_base:
     def __init__(self):
         self.type = 'base'
 
@@ -57,12 +61,14 @@ class Management_base():
     def update(self):
         pass
 
-class Absolute_follow_management():
+
+class Absolute_follow_management:
     """
     Absolute follow management as the name indicates, it use all the power that
     is available that the moment. The demand according to this management strategy
     is an absolute follow of resources.
     """
+
     def __init__(self):
         self.type = 'reactive'
 
@@ -81,8 +87,8 @@ class Absolute_follow_management():
         self.resources = resources
         pass
 
-class Reactive_follow_management():
 
+class Reactive_follow_management:
     def __init__(self, demand):
         if isinstance(demand, list):
             self.demand = demand
@@ -95,14 +101,16 @@ class Reactive_follow_management():
         self.demand = demand
         self.time_step = 0
 
-
     def manage(self):
 
         if self.demand[self.time_step] <= self.resources:
             supply = self.demand[self.time_step]
-        elif self.demand[self.time_step]> self.resources:
+        elif self.demand[self.time_step] > self.resources:
             difference = self.demand[self.time_step] - self.resources
-            if self.observation['current_energy'] - difference > self.observation['usable_capacity']:
+            if (
+                self.observation['current_energy'] - difference
+                > self.observation['usable_capacity']
+            ):
                 supply = self.demand[self.time_step]
             else:
                 supply = 0
@@ -123,8 +131,7 @@ class Reactive_follow_management():
         self.resources_history.append(resources)
 
 
-class Finite_horizon_optimal_management():
-
+class Finite_horizon_optimal_management:
     def __init__(self, resource_index, config={}):
         self.type = 'global'
         self.resource_index = resource_index
@@ -136,18 +143,26 @@ class Finite_horizon_optimal_management():
         time_index = pd.Series(index=self.resource_index, data=None)
         resampled_time_index = time_index.resample(self.sample_period).mean()
         if resources.iloc[-1] != self.resources.cumsum()[-1]:
-            resources.set_value(self.resources.index[-1], self.resources.cumsum().iloc[-1])
+            resources.set_value(
+                self.resources.index[-1], self.resources.cumsum().iloc[-1]
+            )
             resampled_time_index.set_value(self.resources.index[-1], None)
         # Make sure the length of resampled resources have the same end point as resources.
 
-        man = Finite_optimal_management(resources, self.battery.capacity, config=self.config)
+        man = Finite_optimal_management(
+            resources, self.battery.capacity, config=self.config
+        )
         optimal_dispatch = man.find_optimal_dispatch()
         time, cum_energy = np.array(optimal_dispatch).T
 
-
-        optimal_dispatch_df = pd.DataFrame(index=[resampled_time_index.index[int(t)] for t in time], data=cum_energy,
-                                           columns=['Cum_energy'])
-        optimal_dispatch_df = optimal_dispatch_df.resample('1H').interpolate(method='linear')
+        optimal_dispatch_df = pd.DataFrame(
+            index=[resampled_time_index.index[int(t)] for t in time],
+            data=cum_energy,
+            columns=['Cum_energy'],
+        )
+        optimal_dispatch_df = optimal_dispatch_df.resample('1H').interpolate(
+            method='linear'
+        )
         optimal_dispatch_df['Power'] = optimal_dispatch_df['Cum_energy'].diff().bfill()
         supply = optimal_dispatch_df['Power'].tolist()
         return supply
@@ -157,8 +172,7 @@ class Finite_horizon_optimal_management():
         self.resources = resources
 
 
-class Dynamic_environment():
-
+class Dynamic_environment:
     def __init__(self, battery, resource, management):
         self.battery = battery
         self.resource = resource
@@ -190,10 +204,8 @@ class Dynamic_environment():
             return True
         pass
 
-
     def info(self):
         pass
-
 
     def step(self, supply, power):
         self.battery.step(supply, power)
@@ -207,7 +219,7 @@ class Dynamic_environment():
             remaining = len(self.resource) % frequency
 
             for i in intervals:
-                power_in_period = self.resource[i*frequency: (i+1)*frequency]
+                power_in_period = self.resource[i * frequency : (i + 1) * frequency]
                 supply = self.management.udpate(self.observation())
                 for power in power_in_period:
                     self.step(supply, power)
@@ -218,7 +230,6 @@ class Dynamic_environment():
             for power in power_in_period:
                 self.step(supply, power)
 
-
         elif self.management.type == 'global':
             self.management.update(self.battery, self.resource)
             supply = self.management.manage()
@@ -226,7 +237,6 @@ class Dynamic_environment():
             for power in self.resource:
                 self.step(supply[t], power)
                 t = t + 1
-
 
         elif self.management.type == 'reactive':
             t = 0
@@ -240,17 +250,23 @@ class Dynamic_environment():
 
     def simulation_result(self):
         battery_history = self.battery.history()
-        history = pd.DataFrame(columns=['SOC', 'Battery', 'Unmet', 'Waste', 'Supply'],
-                               index= self.resource.index,
-                               data=battery_history.T)
+        history = pd.DataFrame(
+            columns=['SOC', 'Battery', 'Unmet', 'Waste', 'Supply'],
+            index=self.resource.index,
+            data=battery_history.T,
+        )
         return history
 
 
-
-
-class Finite_optimal_management():
-
-    def __init__(self, power_series, battery_capacity, strategy='full-empty', epsilon=0.00001, config={}):
+class Finite_optimal_management:
+    def __init__(
+        self,
+        power_series,
+        battery_capacity,
+        strategy='full-empty',
+        epsilon=0.00001,
+        config={},
+    ):
         """
         The constructor takes two compulsory and three optional arguments.
 
@@ -269,7 +285,6 @@ class Finite_optimal_management():
         self.set_parameters()
         self.battery_capacity = battery_capacity
         logging.basicConfig(filename='management.log', level=logging.DEBUG)
-
 
     def set_parameters(self):
         try:
@@ -290,9 +305,11 @@ class Finite_optimal_management():
         i = 0
         for power in self.aggregated_power.tolist():
             aggregated_power_lower.append([i, power * self.scale])
-            aggregated_power_higher.append([i, power * self.scale + self.battery_capacity * (1 - self.DOD)])
+            aggregated_power_higher.append(
+                [i, power * self.scale + self.battery_capacity * (1 - self.DOD)]
+            )
             aggregated_power_higher_dbg.append([i, power + self.battery_capacity])
-            #TODO this is hard coded energy bumper
+            # TODO this is hard coded energy bumper
             i += 1
 
         self.aggregated_power_higher_dbg = aggregated_power_higher_dbg
@@ -300,11 +317,15 @@ class Finite_optimal_management():
         # Construct the upper hole in a reverse order
         aggregated_power_higher.reverse()
         aggregated_power_higher.insert(0, aggregated_power_higher[-1])
-        aggregated_power_higher.insert(1, [aggregated_power_higher[0][0], aggregated_power_higher[1][1]])
+        aggregated_power_higher.insert(
+            1, [aggregated_power_higher[0][0], aggregated_power_higher[1][1]]
+        )
         del aggregated_power_higher[-1]
 
         # Construct the lower hole in the reverse order
-        aggregated_power_lower.append([aggregated_power_lower[-1][0], aggregated_power_lower[0][1]])
+        aggregated_power_lower.append(
+            [aggregated_power_lower[-1][0], aggregated_power_lower[0][1]]
+        )
         self.aggregated_power_higher = aggregated_power_higher
         self.aggregated_power_lower = aggregated_power_lower
         return aggregated_power_higher, aggregated_power_lower
@@ -332,15 +353,24 @@ class Finite_optimal_management():
 
     def construct_env(self):
         self.wall = self._convert_to_visilibity_polygon(self.wall_list)
-        self.higher_hole = self._convert_to_visilibity_polygon(self.aggregated_power_higher)
-        self.lower_hole = self._convert_to_visilibity_polygon(self.aggregated_power_lower)
+        self.higher_hole = self._convert_to_visilibity_polygon(
+            self.aggregated_power_higher
+        )
+        self.lower_hole = self._convert_to_visilibity_polygon(
+            self.aggregated_power_lower
+        )
         env = vis.Environment([self.wall, self.higher_hole, self.lower_hole])
         self.env = env
         return env
 
     def check_env(self):
-        print('Is the higher hole in standard form?', self.higher_hole.is_in_standard_form())
-        print('Is the lower hole in standard form?', self.lower_hole.is_in_standard_form())
+        print(
+            'Is the higher hole in standard form?',
+            self.higher_hole.is_in_standard_form(),
+        )
+        print(
+            'Is the lower hole in standard form?', self.lower_hole.is_in_standard_form()
+        )
         print('Is the wall in standard form?', self.wall.is_in_standard_form())
         print('Is the environment valid?', self.env.is_valid(self.epsilon))
 
@@ -356,8 +386,9 @@ class Finite_optimal_management():
         wall_list_x, wall_list_y = np.array(wall_list).T
         higher_hole_x, higher_hole_y = np.array(higher_hole).T
         lower_hole_x, lower_hole_y = np.array(lower_hole).T
-        higher_limit_hole_x, higher_limit_hole_y = np.array(self.aggregated_power_higher_dbg).T
-
+        higher_limit_hole_x, higher_limit_hole_y = np.array(
+            self.aggregated_power_higher_dbg
+        ).T
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -382,8 +413,10 @@ class Finite_optimal_management():
         else:
             print('This operation strategy is not supported!')
 
-        self.start_energy = base_energy_start + strategy_state[0] * self.battery_capacity * (1 - self.DOD)
-        #TODO this is hard coded
+        self.start_energy = base_energy_start + strategy_state[
+            0
+        ] * self.battery_capacity * (1 - self.DOD)
+        # TODO this is hard coded
         self.end_energy = base_energy_end + strategy_state[1] * self.battery_capacity
 
         start = vis.Point(0, self.start_energy)
@@ -409,6 +442,3 @@ class Finite_optimal_management():
         ax.plot(self.time - 1, self.end_energy, 'ro')
         optimal_dispatch_x, optimal_dispatch_y = np.array(self.optimal_dispatch).T
         ax.plot(optimal_dispatch_x, optimal_dispatch_y, 'black')
-
-
-

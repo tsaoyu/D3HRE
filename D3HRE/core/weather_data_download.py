@@ -42,19 +42,27 @@ def generate_single_download_link(start, end, lat_lon, data_set=None):
     :return: string the URL for the download of netCDF4 files
     """
     if data_set == 'solar':
-        BASE_URL = 'https://goldsmr4.gesdisc.eosdis.nasa.gov/opendap/MERRA2/M2T1NXRAD.5.12.4/'
+        BASE_URL = (
+            'https://goldsmr4.gesdisc.eosdis.nasa.gov/opendap/MERRA2/M2T1NXRAD.5.12.4/'
+        )
         dataset_name = 'tavg1_2d_rad_Nx'
         parameters = ['SWGDN', 'SWTDN']
     elif data_set == 'wind':
-        BASE_URL = 'https://goldsmr4.gesdisc.eosdis.nasa.gov/opendap/MERRA2/M2T1NXSLV.5.12.4/'
+        BASE_URL = (
+            'https://goldsmr4.gesdisc.eosdis.nasa.gov/opendap/MERRA2/M2T1NXSLV.5.12.4/'
+        )
         dataset_name = 'tavg1_2d_slv_Nx'
         parameters = ['U2M', 'U10M', 'U50M', 'V2M', 'V10M', 'V50M', 'DISPH', 'T2M']
     elif data_set == 'pressure':
-        BASE_URL = 'https://goldsmr4.gesdisc.eosdis.nasa.gov/opendap/MERRA2/M2T1NXSLV.5.12.4/'
+        BASE_URL = (
+            'https://goldsmr4.gesdisc.eosdis.nasa.gov/opendap/MERRA2/M2T1NXSLV.5.12.4/'
+        )
         dataset_name = 'tavg1_2d_slv_Nx'
         parameters = ['PS']
     elif data_set == 'airdensity':
-        BASE_URL = 'http://goldsmr4.gesdisc.eosdis.nasa.gov/opendap/MERRA2/M2T1NXFLX.5.12.4/'
+        BASE_URL = (
+            'http://goldsmr4.gesdisc.eosdis.nasa.gov/opendap/MERRA2/M2T1NXFLX.5.12.4/'
+        )
         dataset_name = 'tavg1_2d_flx_Nx'
         parameters = ['RHOA']
     else:
@@ -103,8 +111,8 @@ def generate_single_download_link(start, end, lat_lon, data_set=None):
 
     hour = '[{s}:{e}]'.format(s=start_hour, e=end_hour)
     file_name = 'MERRA2_{num}.{name}.{y}{m}{d}.nc4'.format(
-        num=file_num, name=dataset_name,
-        y=y_str, m=m_str, d=d_str)
+        num=file_num, name=dataset_name, y=y_str, m=m_str, d=d_str
+    )
     file_folder = '{y}/{m}/'.format(y=y_str, m=m_str)
 
     location = '[{lat}][{lon}]'.format(lat=lat, lon=lon)
@@ -147,7 +155,9 @@ def download_URL(mission, data_set='solar', debug=False):
 
     download_df = mission.copy()
     download_df = download_df.reset_index().rename(columns={'index': 'utc'})
-    download_df['lat_lon'] = download_df[['lat', 'lon']].apply(tuple, axis=1).apply(nearest_point)
+    download_df['lat_lon'] = (
+        download_df[['lat', 'lon']].apply(tuple, axis=1).apply(nearest_point)
+    )
     a = download_df.groupby('lat_lon').first().reset_index().set_index('utc')
     b = download_df.set_index('utc').resample('1D').ffill()
     c = download_df.groupby('lat_lon').last().reset_index().set_index('utc')
@@ -161,14 +171,22 @@ def download_URL(mission, data_set='solar', debug=False):
         return download_index.index[0], download_index.index[-1]
     else:
         generated_URLs = []
-        for start, end, lat_lon in zip(download_index.index[:-1],
-                                     download_index.index[1:],
-                                     download_index[1:]):
-            generated_URLs.append(generate_single_download_link(start, end, lat_lon, data_set))
+        for start, end, lat_lon in zip(
+            download_index.index[:-1], download_index.index[1:], download_index[1:]
+        ):
+            generated_URLs.append(
+                generate_single_download_link(start, end, lat_lon, data_set)
+            )
         return generated_URLs
 
 
-def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER_OF_CONNECTIONS, data_dir=MERRA2_DATA_DIR):
+def resource_df_download(
+    mission,
+    username=USERNAME,
+    password=PASSWORD,
+    n=NUMBER_OF_CONNECTIONS,
+    data_dir=MERRA2_DATA_DIR,
+):
     """
     Resource dataFrame download function.
 
@@ -207,13 +225,14 @@ def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER
             print('Solar data not found, automatic download starting ...')
             download_manager.start_download(n)
 
-
         # Process when necessary
         if not os.path.isfile(file_name):
             print('Compact data not found, automatic processing starting ...')
             wind_files = sorted(glob.glob(folder + '/download_wind/MERRA*'))
             # Sort file to make sure time is aligned
-            file_size = np.array([os.path.getsize(wind_file) for wind_file in wind_files])
+            file_size = np.array(
+                [os.path.getsize(wind_file) for wind_file in wind_files]
+            )
             corrupted_files = (file_size < 60000).sum()
             if corrupted_files == 0:
                 print("Wind data file completeness check pass")
@@ -222,17 +241,21 @@ def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER
                 download_manager.download_path = folder + '/download_wind'
                 URLS = download_URL(mission_df, data_set='wind')
                 url = []
-                for url_index in np.where(file_size<60000)[0].tolist():
+                for url_index in np.where(file_size < 60000)[0].tolist():
                     url.append(URLS[url_index])
                 download_manager.download_urls = url
                 download_manager.start_download(n)
-            wind_xdata = xr.open_mfdataset(wind_files, concat_dim='time', autoclose=True)
+            wind_xdata = xr.open_mfdataset(
+                wind_files, concat_dim='time', autoclose=True
+            )
             # In case of complain on 'Too many files opened', switch autoclose to True,
             # Data processing will be slower with autoclose option on.
             wind_df = wind_xdata.to_dataframe()
 
             solar_files = sorted(glob.glob(folder + '/download_solar/MERRA*'))
-            file_size = np.array([os.path.getsize(solar_file) for solar_file in solar_files])
+            file_size = np.array(
+                [os.path.getsize(solar_file) for solar_file in solar_files]
+            )
             corrupted_files = (file_size < 20000).sum()
             if corrupted_files == 0:
                 print("Solar data file completeness check pass")
@@ -241,11 +264,13 @@ def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER
                 download_manager.download_path = folder + '/download_solar'
                 URLS = download_URL(mission_df, data_set='solar')
                 url = []
-                for url_index in np.where(file_size<20000)[0].tolist():
+                for url_index in np.where(file_size < 20000)[0].tolist():
                     url.append(URLS[url_index])
                 download_manager.download_urls = url
                 download_manager.start_download(n)
-            solar_xdata = xr.open_mfdataset(solar_files, concat_dim='time', autoclose=True)
+            solar_xdata = xr.open_mfdataset(
+                solar_files, concat_dim='time', autoclose=True
+            )
             # In case of complain on 'Too many files opened', switch autoclose to True,
             # Data processing will be slower with autoclose option on.
             solar_df = solar_xdata.to_dataframe()
@@ -260,7 +285,6 @@ def resource_df_download(mission, username=USERNAME, password=PASSWORD, n=NUMBER
 
         resource_df = pd.read_pickle(file_name)
     return resource_df
-
 
 
 def resource_df_download_and_process(mission):

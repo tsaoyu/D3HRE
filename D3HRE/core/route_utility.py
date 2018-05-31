@@ -19,6 +19,7 @@ def opencpn_coordinates_processing(coordinates: str) -> np.ndarray:
     # ref: https://stackoverflow.com/questions/4857927/swapping-columns-in-a-numpy-array
     return route
 
+
 def read_route_from_gpx(file):
     """
     Read route from gpx file

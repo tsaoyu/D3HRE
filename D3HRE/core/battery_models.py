@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def min_max_model(power, use, battery_capacity):
     """
     Minimal maximum battery model
@@ -18,8 +19,15 @@ def min_max_model(power, use, battery_capacity):
     return energy_history
 
 
-def soc_model_fixed_load(power, use, battery_capacity, depth_of_discharge=1,
-                         discharge_rate=0.005, battery_eff=0.9, discharge_eff=0.8):
+def soc_model_fixed_load(
+    power,
+    use,
+    battery_capacity,
+    depth_of_discharge=1,
+    discharge_rate=0.005,
+    battery_eff=0.9,
+    discharge_eff=0.8,
+):
     """
     Battery state of charge model with fixed load.
 
@@ -79,22 +87,19 @@ def soc_model_fixed_load(power, use, battery_capacity, depth_of_discharge=1,
     return SOC, energy_history, unmet_history, waste_history, use_history
 
 
-class Battery():
-
+class Battery:
     def __init__(self, capacity, config={}):
         self.capacity = capacity
         self.config = config
         self.set_parameters()
 
-
     def set_parameters(self):
-        try :
+        try:
             self.depth_of_discharge = self.config['simulation']['battery']['DOD']
             self.discharge_rate = self.config['simulation']['battery']['sigma']
             self.battery_eff = self.config['simulation']['battery']['eta_in']
             self.discharge_eff = self.config['simulation']['battery']['eta_out']
-            self.init_charge =  self.config['simulation']['battery']['B0']
-
+            self.init_charge = self.config['simulation']['battery']['B0']
 
         except KeyError:
             print('Parameter is not found in config file, default values are used.')
@@ -111,7 +116,6 @@ class Battery():
         discharge_rate = self.discharge_rate
         discharge_eff = self.discharge_eff
         battery_eff = self.battery_eff
-
 
         use_history = []
         waste_history = []
@@ -150,8 +154,7 @@ class Battery():
                     energy = energy
 
             energy_history.append(energy)
-            SOC.append(energy/battery_capacity)
-
+            SOC.append(energy / battery_capacity)
 
             self.SOC = SOC
             self.energy_history = energy_history
@@ -159,16 +162,16 @@ class Battery():
             self.waste_history = waste_history
             self.use_history = use_history
 
-
-
     def battery_history(self):
-        history = np.vstack((
-                    np.array(self.SOC),
-                    np.array(self.energy_history),
-                    np.array(self.unmet_history),
-                    np.array(self.waste_history),
-                    np.array(self.use_history)
-        ))
+        history = np.vstack(
+            (
+                np.array(self.SOC),
+                np.array(self.energy_history),
+                np.array(self.unmet_history),
+                np.array(self.waste_history),
+                np.array(self.use_history),
+            )
+        )
         return history
 
     def lost_power_supply_probability(self):
@@ -176,9 +179,7 @@ class Battery():
         return LPSP
 
 
-
-class Battery_managed():
-
+class Battery_managed:
     def __init__(self, capacity, config={}):
         self.capacity = capacity
         self.config = config
@@ -186,16 +187,14 @@ class Battery_managed():
         self.init_history()
         self.init_simulation()
 
-
     def set_parameters(self):
-        try :
+        try:
             self.depth_of_discharge = self.config['simulation']['battery']['DOD']
             self.discharge_rate = self.config['simulation']['battery']['sigma']
             self.battery_eff = self.config['simulation']['battery']['eta_in']
             self.discharge_eff = self.config['simulation']['battery']['eta_out']
-            self.init_charge =  self.config['simulation']['battery']['B0']
+            self.init_charge = self.config['simulation']['battery']['B0']
             self.DOD = self.depth_of_discharge
-
 
         except KeyError:
             print('Parameter is not found in config file, default values are used.')
@@ -216,12 +215,14 @@ class Battery_managed():
         self.battery_energy_history = []
         self.SOC = []
 
-
     def step(self, demand, power):
         if demand >= power:
             self.supply_history.append(power)
             self.unmet_history.append(0)
-            energy_new = self.energy * (1 - self.discharge_rate) + (demand - power) * self.battery_eff
+            energy_new = (
+                self.energy * (1 - self.discharge_rate)
+                + (demand - power) * self.battery_eff
+            )
             if energy_new < self.capacity:
                 self.energy = energy_new  # battery energy got update
                 self.waste_history.append(0)
@@ -230,14 +231,22 @@ class Battery_managed():
                 self.energy = self.energy
 
         elif demand < power:
-            self.energy_new = self.energy * (1 - self.discharge_rate) + (demand - power) / self.discharge_eff
+            self.energy_new = (
+                self.energy * (1 - self.discharge_rate)
+                + (demand - power) / self.discharge_eff
+            )
             if self.energy_new > (1 - self.DOD) * self.capacity:
                 self.energy = self.energy_new
                 self.unmet_history.append(0)
                 self.waste_history.append(0)
                 self.supply_history.append(power)
-            elif self.energy * (1 - self.discharge_rate) + demand * self.battery_eff < self.capacity:
-                self.energy = self.energy * (1 - self.discharge_rate) + demand * self.battery_eff
+            elif (
+                self.energy * (1 - self.discharge_rate) + demand * self.battery_eff
+                < self.capacity
+            ):
+                self.energy = (
+                    self.energy * (1 - self.discharge_rate) + demand * self.battery_eff
+                )
                 self.unmet_history.append(power - demand)
                 self.supply_history.append(0)
                 self.waste_history.append(0)
@@ -248,21 +257,25 @@ class Battery_managed():
                 self.energy = self.energy
 
         self.battery_energy_history.append(self.energy)
-        self.SOC.append(self.energy/self.capacity)
-
+        self.SOC.append(self.energy / self.capacity)
 
     def history(self):
-        battery_history = np.vstack((
-                    np.array(self.SOC),
-                    np.array(self.battery_energy_history),
-                    np.array(self.unmet_history),
-                    np.array(self.waste_history),
-                    np.array(self.supply_history)
-        ))
+        battery_history = np.vstack(
+            (
+                np.array(self.SOC),
+                np.array(self.battery_energy_history),
+                np.array(self.unmet_history),
+                np.array(self.waste_history),
+                np.array(self.supply_history),
+            )
+        )
         return battery_history
 
     def state(self):
-        battery_state = {'current_energy': self.energy, 'usable_capacity':self.DOD * self.capacity}
+        battery_state = {
+            'current_energy': self.energy,
+            'usable_capacity': self.DOD * self.capacity,
+        }
         return battery_state
 
     def copy(self):
@@ -272,8 +285,7 @@ class Battery_managed():
         pass
 
 
-class Soc_model_variable_load():
-
+class Soc_model_variable_load:
     def __init__(self, battery, power, load):
         self.battery = battery
         self.battery.run(power, load)
@@ -291,9 +303,15 @@ class Soc_model_variable_load():
         pass
 
 
-
-def soc_model_variable_load(power, use, battery_capacity, depth_of_discharge=1,
-                         discharge_rate=0.005, battery_eff=0.9, discharge_eff=0.8):
+def soc_model_variable_load(
+    power,
+    use,
+    battery_capacity,
+    depth_of_discharge=1,
+    discharge_rate=0.005,
+    battery_eff=0.9,
+    discharge_eff=0.8,
+):
     """
     Battery state of charge model with fixed load.
 
@@ -353,8 +371,9 @@ def soc_model_variable_load(power, use, battery_capacity, depth_of_discharge=1,
         SOC = np.array(energy_history) / battery_capacity
     return SOC, energy_history, unmet_history, waste_history, use_history
 
+
 if __name__ == '__main__':
     b1 = Battery(10)
-    b1.run([1,1,1], [1,1,1])
-    b1.run( [1, 1, 1], [10, 10, 10])
+    b1.run([1, 1, 1], [1, 1, 1])
+    b1.run([1, 1, 1], [10, 10, 10])
     print(b1.lost_power_supply_probability())

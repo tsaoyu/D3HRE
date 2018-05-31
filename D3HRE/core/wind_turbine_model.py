@@ -49,5 +49,13 @@ def resistance_power(dataframe, area):
         negative for propulsion power increase due to resistance
     """
     A = area
-    power_correction = 1 / 2 * A * 0.6 * dataframe.Va ** 2 * dataframe.relative_wind_cos* dataframe.speed
+    power_correction = (
+        1
+        / 2
+        * A
+        * 0.6
+        * dataframe.Va ** 2
+        * dataframe.relative_wind_cos
+        * dataframe.speed
+    )
     return power_correction

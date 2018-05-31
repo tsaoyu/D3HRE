@@ -8,6 +8,7 @@ from datetime import timedelta
 from D3HRE.core.get_hash import hash_value
 from D3HRE.core.dataframe_utility import full_day_cut
 
+
 def haversine(lon1, lat1, lon2, lat2):
     """
     Calculate the great circle distance between two points
@@ -38,8 +39,12 @@ def distance_between_waypoints(way_points):
     :return: np array Haversine distance between two way points
              in km
     """
-    distance = np.array([haversine(v[0], v[1], w[0], w[1]) for v, w in
-                         zip(way_points[:-1], way_points[1:])])
+    distance = np.array(
+        [
+            haversine(v[0], v[1], w[0], w[1])
+            for v, w in zip(way_points[:-1], way_points[1:])
+        ]
+    )
     return distance
 
 
@@ -77,7 +82,12 @@ def position_dataframe(start_date, way_points, speed):
 
     # Custom interpolation calculate latitude and longitude of platform at each hour
     lTs = latTS.copy()
-    x = lTs.isnull().reset_index(name='null').reset_index().rename(columns={"level_0": "order"})
+    x = (
+        lTs.isnull()
+        .reset_index(name='null')
+        .reset_index()
+        .rename(columns={"level_0": "order"})
+    )
     x['block'] = (x['null'].shift(1) != x['null']).astype(int).cumsum()
     block_to_fill = x[x['null']].groupby('block')['order'].apply(np.array)
 
@@ -88,7 +98,7 @@ def position_dataframe(start_date, way_points, speed):
         lon1 = lonTS.iloc[start_index]
         lat2 = latTS.iloc[end_index]
         lon2 = lonTS.iloc[end_index]
-        n = (end_index - start_index)
+        n = end_index - start_index
         lat_lon1 = lat1, lon1
         lat_lon2 = lat2, lon2
         return [lat_lon1, lat_lon2, n]
@@ -107,7 +117,9 @@ def position_dataframe(start_date, way_points, speed):
         piece_fraction = 1 / n
         for n in range(n - 1):
             g_EB_E_ti = path.interpolate(piece_fraction * (n + 1)).to_geo_point()
-            interpolate_coor.append([g_EB_E_ti.latitude_deg[0], g_EB_E_ti.longitude_deg[0]])
+            interpolate_coor.append(
+                [g_EB_E_ti.latitude_deg[0], g_EB_E_ti.longitude_deg[0]]
+            )
         return interpolate_coor
 
     way_interpolated = np.array([])
@@ -138,10 +150,10 @@ def position_dataframe(start_date, way_points, speed):
 
     local_time = []
     for index, row in mission.iterrows():
-        local_time.append(index + timedelta(hours = int(find_timezone(lons, row.lon))))
+        local_time.append(index + timedelta(hours=int(find_timezone(lons, row.lon))))
     # time difference into timedelta
     # t_diff = list(map(lambda x: timedelta(hours=x), time_diff))
-    #local_time = mission.index + t_diff
+    # local_time = mission.index + t_diff
     mission['local_time'] = local_time
 
     return mission
@@ -184,7 +196,7 @@ def nearest_point(lat_lon):
     return lat_co, lon_co
 
 
-class Mission():
+class Mission:
     def __init__(self, start_time, route, speed):
         self.start_time = start_time
         self.route = route
@@ -194,7 +206,8 @@ class Mission():
 
     def __str__(self):
         return "This mission {ID} is start from {a} at {b} UTC.".format(
-            a=self.route[0], b=self.start_time, ID=self.ID)
+            a=self.route[0], b=self.start_time, ID=self.ID
+        )
 
     def get_ID(self):
         route_tuple = tuple(self.route.flatten().tolist())
@@ -208,27 +221,28 @@ class Mission():
         pass
 
 
-
-
 if __name__ == '__main__':
     test_route = np.array(
-        [[9.20628817, 171.58565184],
-         [9.48566359, 174.60574911],
-         [9.95078073, 176.68206597],
-         [10.69358, 178.94713892],
-         [11.06430687, -176.90022735],
-         [10.87900106, -172.27570342],
-         [9.95078073, -168.97247204],
-         [9.67178793, -166.89615517],
-         [8.92669178, -164.53670418],
-         [8.36686209, -163.12103359],
-         [7.61917834, -161.61098496],
-         [7.05755065, -160.66720457],
-         [6.30766145, -159.15715593],
-         [5.93230149, -158.1189975],
-         [-1.60710319, -156.04268063]])
+        [
+            [9.20628817, 171.58565184],
+            [9.48566359, 174.60574911],
+            [9.95078073, 176.68206597],
+            [10.69358, 178.94713892],
+            [11.06430687, -176.90022735],
+            [10.87900106, -172.27570342],
+            [9.95078073, -168.97247204],
+            [9.67178793, -166.89615517],
+            [8.92669178, -164.53670418],
+            [8.36686209, -163.12103359],
+            [7.61917834, -161.61098496],
+            [7.05755065, -160.66720457],
+            [6.30766145, -159.15715593],
+            [5.93230149, -158.1189975],
+            [-1.60710319, -156.04268063],
+        ]
+    )
     test_mission = get_mission('2014-01-01', test_route, 2)
-    speed = np.linspace(2, 5, num=test_route.shape[0]-1)
+    speed = np.linspace(2, 5, num=test_route.shape[0] - 1)
     variable_speed_mission = get_mission('2014-01-01', test_route, 2)
     print(test_mission.lon.min())
     print(variable_speed_mission.tail())

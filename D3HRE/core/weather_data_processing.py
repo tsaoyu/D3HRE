@@ -2,8 +2,6 @@ import numpy as np
 from D3HRE.core.navigation_utility import calculate_initial_compass_bearing
 
 
-
-
 def resource_df_processing(dataframe):
     """
     Process downloaded MEERA-2 dataFrame.
@@ -26,8 +24,9 @@ def resource_df_processing(dataframe):
     dataframe['V2'] = np.sqrt(dataframe.V2M ** 2 + dataframe.U2M ** 2)
 
     # Get true wind direction from north ward and east ward wind speed
-    dataframe['true_wind_direction'] = (np.degrees(np.arctan2(dataframe['U2M'], dataframe['V2M']))
-                                        + 360) % 360
+    dataframe['true_wind_direction'] = (
+        np.degrees(np.arctan2(dataframe['U2M'], dataframe['V2M'])) + 360
+    ) % 360
 
     location_list = [tuple(x) for x in dataframe[['lat', 'lon']].values]
 
@@ -56,14 +55,15 @@ def resource_df_processing(dataframe):
     V_app = dataframe['V2M'] - V_p
 
     dataframe['Va'] = np.sqrt(U_app ** 2 + V_app ** 2)
-    dataframe['apparent_wind_direction'] = (np.degrees(np.arctan2(U_app, V_app)) +
-                                            360) % 360
+    dataframe['apparent_wind_direction'] = (
+        np.degrees(np.arctan2(U_app, V_app)) + 360
+    ) % 360
     V_a = np.array([U_app, V_app]).T
     V_sp = np.array([U_p, V_p]).T
 
     wind_cos = []
-    for U,V in zip(V_a, V_sp):
-        wind_cos.append(np.dot(U, V)/np.linalg.norm(U)/np.linalg.norm(V))
+    for U, V in zip(V_a, V_sp):
+        wind_cos.append(np.dot(U, V) / np.linalg.norm(U) / np.linalg.norm(V))
 
     dataframe['relative_wind_cos'] = wind_cos
 
