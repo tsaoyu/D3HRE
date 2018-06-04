@@ -88,6 +88,23 @@ class Absolute_follow_management:
         pass
 
 
+class EWMA_management:
+    def __init__(self):
+        self.type = 'reactive'
+        self.time_step = 0
+        self.resource_series = pd.Series()
+
+
+    def update(self, observation, resources):
+        self.resource_series.loc[self.resource_series.shape[0]] = resources
+        pass
+
+    def manage(self):
+        supply = self.resource_series.ewm(span=6).mean().iloc[-1]
+        self.time_step += 1
+        return supply
+
+
 class Reactive_follow_management:
     def __init__(self, demand):
         if isinstance(demand, list):
@@ -178,8 +195,20 @@ class Dynamic_environment:
         self.resource = resource
         self.resource_list = self.resource.tolist()
         self.management = management
-        self.total_time_step = len(self.resource_list)
+        self.total_time_step = len(self.resource_list) - 1
         self.time_step = 0
+        self.total_reward = 0
+
+    def set_demand(self, result_df):
+        """
+
+        :param demand: pandas dataFrame from simulation result
+        :return: none
+        """
+        self.prop_load = result_df.Prop_load
+        self.hotel_load = result_df.Hotel_load
+
+
 
     def reset(self):
         """
@@ -187,6 +216,7 @@ class Dynamic_environment:
         :return:
         """
         self.time_step = 0
+        self.total_reward = 0
         self.battery.init_simualtion()
         self.battery.init_history()
         pass
@@ -194,8 +224,16 @@ class Dynamic_environment:
     def observation(self):
         return self.battery.state()
 
-    def reward(self):
-        pass
+    def reward(self, supply):
+        points = 0
+        if supply >= self.prop_load.iloc[self.time_step]:
+            points += 10
+            extra_power = (supply - self.prop_load.iloc[self.time_step])
+            points += extra_power * 0.1
+        else:
+            points -= 5
+
+        return points
 
     def done(self):
         if self.time_step < self.total_time_step:
@@ -209,8 +247,9 @@ class Dynamic_environment:
 
     def step(self, supply, power):
         self.battery.step(supply, power)
+        step_info = (self.observation(), self.reward(supply), self.done(), self.info())
         self.time_step += 1
-        return self.observation(), self.reward(), self.done(), self.info()
+        return step_info
 
     def step_over_time(self):
         if self.management.type == 'predictive':
@@ -222,29 +261,29 @@ class Dynamic_environment:
                 power_in_period = self.resource[i * frequency : (i + 1) * frequency]
                 supply = self.management.udpate(self.observation())
                 for power in power_in_period:
-                    self.step(supply, power)
+                    _ , reward, _ , _ = self.step(supply, power)
+                    self.total_reward += reward
 
             power_in_period = self.resource[-remaining:]
             self.management.update(self.observation())
             supply = self.management.manage()
             for power in power_in_period:
-                self.step(supply, power)
+                _, reward, _, _ = self.step(supply, power)
+                self.total_reward += reward
 
         elif self.management.type == 'global':
             self.management.update(self.battery, self.resource)
             supply = self.management.manage()
-            t = 0
             for power in self.resource:
-                self.step(supply[t], power)
-                t = t + 1
+                _, reward, _, _ =self.step(supply[self.time_step], power)
+                self.total_reward += reward
 
         elif self.management.type == 'reactive':
-            t = 0
             for power in self.resource:
-                self.management.update(self.observation(), self.resource_list[t])
+                self.management.update(self.observation(), self.resource_list[self.time_step])
                 supply = self.management.manage()
-                self.step(supply, power)
-                t = t + 1
+                _, reward, _, _ = self.step(supply, power)
+                self.total_reward += reward
         else:
             print('I don\'t know how to handle this type of management!')
 
