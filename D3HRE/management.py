@@ -160,10 +160,8 @@ class Finite_horizon_optimal_management:
         time_index = pd.Series(index=self.resource_index, data=None)
         resampled_time_index = time_index.resample(self.sample_period).mean()
         if resources.iloc[-1] != self.resources.cumsum()[-1]:
-            resources.set_value(
-                self.resources.index[-1], self.resources.cumsum().iloc[-1]
-            )
-            resampled_time_index.set_value(self.resources.index[-1], None)
+            resources.at[self.resources.index[-1]] = self.resources.cumsum().iloc[-1]
+            resampled_time_index.at[self.resources.index[-1]] =  None
         # Make sure the length of resampled resources have the same end point as resources.
 
         man = Finite_optimal_management(
