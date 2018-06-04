@@ -93,6 +93,7 @@ class EWMA_management:
         self.type = 'reactive'
         self.time_step = 0
         self.resource_series = pd.Series()
+        self.scaling = 0.95
 
 
     def update(self, observation, resources):
@@ -100,7 +101,7 @@ class EWMA_management:
         pass
 
     def manage(self):
-        supply = self.resource_series.ewm(span=6).mean().iloc[-1]
+        supply = self.resource_series.ewm(span=6).mean().iloc[-1] * self.scaling
         self.time_step += 1
         return supply
 
@@ -124,8 +125,7 @@ class Reactive_follow_management:
             supply = self.demand[self.time_step]
         elif self.demand[self.time_step] > self.resources:
             difference = self.demand[self.time_step] - self.resources
-            if (
-                self.observation['current_energy'] - difference
+            if (self.observation['current_energy'] - difference
                 > self.observation['usable_capacity']
             ):
                 supply = self.demand[self.time_step]
@@ -193,13 +193,13 @@ class Dynamic_environment:
         self.resource = resource
         self.resource_list = self.resource.tolist()
         self.management = management
-        self.total_time_step = len(self.resource_list) - 1
+        self.total_time_step = len(self.resource_list)
         self.time_step = 0
         self.total_reward = 0
+        self.planning = []
 
     def set_demand(self, result_df):
         """
-
         :param demand: pandas dataFrame from simulation result
         :return: none
         """
@@ -247,6 +247,7 @@ class Dynamic_environment:
         self.battery.step(supply, power)
         step_info = (self.observation(), self.reward(supply), self.done(), self.info())
         self.time_step += 1
+        self.planning.append(supply)
         return step_info
 
     def step_over_time(self):
@@ -285,13 +286,15 @@ class Dynamic_environment:
         else:
             print('I don\'t know how to handle this type of management!')
 
-    def simulation_result(self):
+    def simulation_result(self, name=None):
         battery_history = self.battery.history()
         history = pd.DataFrame(
-            columns=['SOC', 'Battery', 'Unmet', 'Waste', 'Supply'],
+            columns=['SOC', 'Battery', 'Unmet', 'Waste', 'Supply', 'Planned'],
             index=self.resource.index,
-            data=battery_history.T,
+            data=np.vstack((battery_history, np.array(self.planning))).T,
         )
+        if name is not None:
+            history.name = name
         return history
 
 

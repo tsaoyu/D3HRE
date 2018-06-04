@@ -186,6 +186,7 @@ class Battery_managed:
         self.set_parameters()
         self.init_history()
         self.init_simulation()
+        self.stats = []
 
     def set_parameters(self):
         try:
@@ -215,22 +216,28 @@ class Battery_managed:
         self.battery_energy_history = []
         self.SOC = []
 
-    def step(self, demand, power):
-        if demand >= power:
+    def step(self, demand,  power):
+        if demand < power:
             self.supply_history.append(power)
             self.unmet_history.append(0)
             energy_new = (
                 self.energy * (1 - self.discharge_rate)
-                + (demand - power) * self.battery_eff
+                + (power - demand) * self.battery_eff
             )
             if energy_new < self.capacity:
                 self.energy = energy_new  # battery energy got update
                 self.waste_history.append(0)
+                self.stats.append("""Demand can be meet by generation, also battery is not full. 
+                                Supply {demand}, charge {diff}.""".format(demand=demand, diff=power-demand)
+                                  )
             else:
-                self.waste_history.append(demand - power)
+                self.waste_history.append(power - demand)
                 self.energy = self.energy
+                self.stats.append("""Demand can be meet by generation, but battery is already full. 
+                                    Supply {demand}, waste {diff}.""".format(demand=demand, diff=power - demand)
+                                  )
 
-        elif demand < power:
+        elif demand >= power:
             self.energy_new = (
                 self.energy * (1 - self.discharge_rate)
                 + (demand - power) / self.discharge_eff
@@ -239,22 +246,25 @@ class Battery_managed:
                 self.energy = self.energy_new
                 self.unmet_history.append(0)
                 self.waste_history.append(0)
-                self.supply_history.append(power)
-            elif (
-                self.energy * (1 - self.discharge_rate) + demand * self.battery_eff
-                < self.capacity
-            ):
-                self.energy = (
-                    self.energy * (1 - self.discharge_rate) + demand * self.battery_eff
-                )
-                self.unmet_history.append(power - demand)
+                self.supply_history.append(demand)
+                self.stats.append("""Demand can not meet by generation, power in battery can make up difference.
+                     Supply {demand} by discharge from battery""".format(demand=demand))
+
+            elif self.energy * (1 - self.discharge_rate) + power * self.battery_eff < self.capacity:
+                self.energy = self.energy * (1 - self.discharge_rate) + power * self.battery_eff
+                self.unmet_history.append(demand - power)
                 self.supply_history.append(0)
                 self.waste_history.append(0)
+                self.stats.append("""Demand can not meet by generation, also power in battery can not make up difference.
+                                     Charge {diff} to battery to avoid waste""".format(diff=demand - power))
             else:
-                self.unmet_history.append(power - demand)
+                self.unmet_history.append(demand - power)
                 self.supply_history.append(0)
                 self.waste_history.append(demand)
                 self.energy = self.energy
+                self.stats.append("""Demand can not meet by generation, also power in battery can not make up difference.
+                                                     Charge {diff} to battery to avoid waste""".format(
+                    diff=power - demand))
 
         self.battery_energy_history.append(self.energy)
         self.SOC.append(self.energy / self.capacity)
@@ -278,6 +288,9 @@ class Battery_managed:
         }
         return battery_state
 
+    def story_board(self):
+        return self.stats
+    
     def copy(self):
         return Battery_managed(self.capacity, self.config)
 

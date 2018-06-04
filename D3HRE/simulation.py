@@ -136,7 +136,7 @@ class Reactive_simulation(Task):
             + self.solar_power_simulation * solar_area
         )
         supply, load = power_supply.tolist(), self.Task.load_demand.tolist()
-        if self.config != {}:
+        if self.config is not {}:
             model = Soc_model_variable_load(
                 Battery(battery_capacity, config=self.config), supply, load
             )
