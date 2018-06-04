@@ -75,6 +75,7 @@ def test_absolute_follow_managemet():
     management = Absolute_follow_management()
     b1 = battery.copy()
     env = Dynamic_environment(b1, resource, management)
+    env.set_demand(result_df)
     env.step_over_time()
     env.simulation_result()
 
@@ -84,6 +85,7 @@ def test_reactive_follow_management():
     management = Reactive_follow_management(demand)
     b2 = battery.copy()
     env = Dynamic_environment(b2, resource, management)
+    env.set_demand(result_df)
     env.step_over_time()
     env.simulation_result()
 
@@ -93,6 +95,7 @@ def test_global_finite_horizon_optimal_management():
     management = Finite_horizon_optimal_management(resource.index, config=config)
     b3 = battery.copy()
     env = Dynamic_environment(b3, resource, management)
+    env.set_demand(result_df)
     env.step_over_time()
     env.simulation_result()
 
