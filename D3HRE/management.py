@@ -159,15 +159,14 @@ class Finite_horizon_optimal_management:
         resources = self.resources.resample(self.sample_period).sum()
         time_index = pd.Series(index=self.resource_index, data=None)
         resampled_time_index = time_index.resample(self.sample_period).mean()
-        if resources.iloc[-1] != self.resources.cumsum()[-1]:
-            resources.at[self.resources.index[-1]] = self.resources.cumsum().iloc[-1]
+
+        if resources.index[-1] is not self.resources.index[-1]:
+            resources.at[self.resources.index[-1]] = self.resources.iloc[-1]
             resampled_time_index.at[self.resources.index[-1]] =  None
         # Make sure the length of resampled resources have the same end point as resources.
 
-        man = Finite_optimal_management(
-            resources, self.battery.capacity, config=self.config
-        )
-        optimal_dispatch = man.find_optimal_dispatch()
+        self.man = Finite_optimal_management(resources, self.battery.capacity, config=self.config)
+        optimal_dispatch = self.man.find_optimal_dispatch()
         time, cum_energy = np.array(optimal_dispatch).T
 
         optimal_dispatch_df = pd.DataFrame(
@@ -220,16 +219,16 @@ class Dynamic_environment:
         pass
 
     def observation(self):
-        return self.battery.state()
+        return self.battery.observation()
 
     def reward(self, supply):
         points = 0
         if supply >= self.prop_load.iloc[self.time_step]:
             points += 10
             extra_power = (supply - self.prop_load.iloc[self.time_step])
-            points += extra_power * 0.1
+            points += min(extra_power * 0.1, 20)
         else:
-            points -= 5
+            points -= 50
 
         return points
 
@@ -345,9 +344,7 @@ class Finite_optimal_management:
         i = 0
         for power in self.aggregated_power.tolist():
             aggregated_power_lower.append([i, power * self.scale])
-            aggregated_power_higher.append(
-                [i, power * self.scale + self.battery_capacity * (1 - self.DOD)]
-            )
+            aggregated_power_higher.append([i, power * self.scale + self.battery_capacity * (1 - self.DOD)])
             aggregated_power_higher_dbg.append([i, power + self.battery_capacity])
             # TODO this is hard coded energy bumper
             i += 1
@@ -372,8 +369,8 @@ class Finite_optimal_management:
 
     def construct_wall(self):
         wall_list = []
-        left_x = self.aggregated_power_lower[0][0] - 1  # esstentially time - 1
-        right_x = self.aggregated_power_lower[-1][0] + 1  # esstentially time + 1
+        left_x = self.aggregated_power_lower[0][0] - 1  # essentially time - 1
+        right_x = self.aggregated_power_lower[-1][0] + 1  # essentially time + 1
         bottom_y = 0
         top_y = self.aggregated_power_higher[1][1] + 50
         wall_list.append([left_x, bottom_y])
@@ -433,9 +430,9 @@ class Finite_optimal_management:
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.plot(wall_list_x, wall_list_y, 'black')
-        ax.plot(higher_limit_hole_x, higher_limit_hole_y)
-        ax.plot(higher_hole_x, higher_hole_y)
-        ax.plot(lower_hole_x, lower_hole_y)
+        ax.plot(higher_limit_hole_x, higher_limit_hole_y, 'blue')
+        ax.plot(higher_hole_x, higher_hole_y, 'blue')
+        ax.plot(lower_hole_x, lower_hole_y, 'red')
         return ax
 
     def find_shortest_path(self):
@@ -453,9 +450,7 @@ class Finite_optimal_management:
         else:
             print('This operation strategy is not supported!')
 
-        self.start_energy = base_energy_start + strategy_state[
-            0
-        ] * self.battery_capacity * (1 - self.DOD)
+        self.start_energy = base_energy_start + strategy_state[0] * self.battery_capacity * (1 - self.DOD)
         # TODO this is hard coded
         self.end_energy = base_energy_end + strategy_state[1] * self.battery_capacity
 

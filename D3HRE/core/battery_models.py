@@ -179,6 +179,8 @@ class Battery:
         return LPSP
 
 
+
+
 class Battery_managed:
     def __init__(self, capacity, config={}):
         self.capacity = capacity
@@ -186,7 +188,8 @@ class Battery_managed:
         self.set_parameters()
         self.init_history()
         self.init_simulation()
-        self.stats = []
+        self.status = []
+        self.states_list = []
 
     def set_parameters(self):
         try:
@@ -206,6 +209,12 @@ class Battery_managed:
             self.init_charge = 1
             self.DOD = self.depth_of_discharge
 
+
+    def reset(self):
+        self.init_history()
+        self.init_simulation()
+
+
     def init_simulation(self):
         self.energy = self.init_charge * self.capacity
 
@@ -217,55 +226,60 @@ class Battery_managed:
         self.SOC = []
 
     def step(self, demand,  power):
-        if demand < power:
-            self.supply_history.append(power)
+
+        if power >= demand:
+            self.supply_history.append(demand)
             self.unmet_history.append(0)
-            energy_new = (
-                self.energy * (1 - self.discharge_rate)
-                + (power - demand) * self.battery_eff
-            )
+
+            energy_new = self.energy * (1 - self.discharge_rate) + (power - demand) * self.battery_eff
             if energy_new < self.capacity:
                 self.energy = energy_new  # battery energy got update
                 self.waste_history.append(0)
-                self.stats.append("""Demand can be meet by generation, also battery is not full. 
+                self.status.append("""Demand can be meet by generation, also battery is not full. 
                                 Supply {demand}, charge {diff}.""".format(demand=demand, diff=power-demand)
-                                  )
+                                   )
+                self.state = 'charge'
             else:
-                self.waste_history.append(power - demand)
-                self.energy = self.energy
-                self.stats.append("""Demand can be meet by generation, but battery is already full. 
-                                    Supply {demand}, waste {diff}.""".format(demand=demand, diff=power - demand)
-                                  )
+                self.waste_history.append(power - demand - (self.capacity - self.energy))
+                self.energy = self.capacity
+                self.status.append("""Demand can be meet by generation, but battery is already full. 
+                                    Supply {demand}, charge battery to full waste {diff}.""".format(
+                                    demand=demand, diff=power-demand)
+                                   )
+                self.state = 'float'
 
-        elif demand >= power:
-            self.energy_new = (
-                self.energy * (1 - self.discharge_rate)
-                + (demand - power) / self.discharge_eff
-            )
-            if self.energy_new > (1 - self.DOD) * self.capacity:
-                self.energy = self.energy_new
+        elif power < demand:
+
+            energy_new = self.energy * (1 - self.discharge_rate)+ (power - demand) / self.discharge_eff
+
+            if energy_new > (1 - self.DOD) * self.capacity:
+                self.energy = energy_new
                 self.unmet_history.append(0)
                 self.waste_history.append(0)
                 self.supply_history.append(demand)
-                self.stats.append("""Demand can not meet by generation, power in battery can make up difference.
-                     Supply {demand} by discharge from battery""".format(demand=demand))
+                self.status.append("""Demand can not meet by generation, power in battery can make up difference.
+                                     Supply {demand} by discharge from battery""".format(demand=demand))
+                self.state = 'discharge'
 
             elif self.energy * (1 - self.discharge_rate) + power * self.battery_eff < self.capacity:
                 self.energy = self.energy * (1 - self.discharge_rate) + power * self.battery_eff
                 self.unmet_history.append(demand - power)
                 self.supply_history.append(0)
                 self.waste_history.append(0)
-                self.stats.append("""Demand can not meet by generation, also power in battery can not make up difference.
-                                     Charge {diff} to battery to avoid waste""".format(diff=demand - power))
+                self.status.append("""Demand can not meet by generation, also power in battery can not make up difference.
+                                     Charge {diff} to battery to avoid waste""".format(diff=power))
+                self.state = 'unmet'
             else:
                 self.unmet_history.append(demand - power)
                 self.supply_history.append(0)
-                self.waste_history.append(demand)
-                self.energy = self.energy
-                self.stats.append("""Demand can not meet by generation, also power in battery can not make up difference.
-                                                     Charge {diff} to battery to avoid waste""".format(
-                    diff=power - demand))
+                self.waste_history.append(power - (self.capacity - self.energy))
+                self.energy = self.capacity
+                self.status.append("""Demand can not meet by generation, also power in battery can not make up difference.
+                                                                 Charge {diff} to make battery full""".format(
+                    diff=self.capacity-self.energy))
+                self.state = 'unmet'
 
+        self.states_list.append(self.state)
         self.battery_energy_history.append(self.energy)
         self.SOC.append(self.energy / self.capacity)
 
@@ -281,7 +295,7 @@ class Battery_managed:
         )
         return battery_history
 
-    def state(self):
+    def observation(self):
         battery_state = {
             'current_energy': self.energy,
             'usable_capacity': self.DOD * self.capacity,
@@ -289,8 +303,8 @@ class Battery_managed:
         return battery_state
 
     def story_board(self):
-        return self.stats
-    
+        return self.status
+
     def copy(self):
         return Battery_managed(self.capacity, self.config)
 
