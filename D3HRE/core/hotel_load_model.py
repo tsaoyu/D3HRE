@@ -50,6 +50,7 @@ class HotelLoad:
             for component in self.components:
                 if self.power_consumption_list[component]['duty_cycle'] != 1:
                     duty_cycle = self.power_consumption_list[component]['duty_cycle']
+                    np.random.seed(123)
                     performance = duty_cycle + np.random.randn() * 0.1
                 else:
                     performance = 1
