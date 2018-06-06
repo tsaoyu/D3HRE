@@ -196,6 +196,14 @@ class Dynamic_environment:
         self.time_step = 0
         self.total_reward = 0
         self.planning = []
+        self.set_reward_weight()
+
+
+    def set_reward_weight(self):
+        self.reach_reward = 10
+        self.not_reach_penalty = -20
+        self.extra_power_reward_factor = 0.1
+        self.maximum_extra_power_reward = 50
 
     def set_demand(self, result_df):
         """
@@ -224,11 +232,12 @@ class Dynamic_environment:
     def reward(self, supply):
         points = 0
         if supply >= self.prop_load.iloc[self.time_step]:
-            points += 10
+            points += self.reach_reward
             extra_power = (supply - self.prop_load.iloc[self.time_step])
-            points += min(extra_power * 0.1, 20)
+            points += min(extra_power * self.extra_power_reward_factor,
+                          self.maximum_extra_power_reward)
         else:
-            points -= 50
+            points += self.not_reach_penalty
 
         return points
 
