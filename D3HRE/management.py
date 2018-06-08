@@ -201,9 +201,9 @@ class Dynamic_environment:
 
     def set_reward_weight(self):
         self.reach_reward = 10
-        self.not_reach_penalty = -20
-        self.extra_power_reward_factor = 0.1
-        self.maximum_extra_power_reward = 50
+        self.not_reach_penalty = -50
+        self.extra_power_reward_factor = 0.05
+        self.maximum_extra_power_reward = 10
 
     def set_demand(self, result_df):
         """
@@ -222,8 +222,7 @@ class Dynamic_environment:
         """
         self.time_step = 0
         self.total_reward = 0
-        self.battery.init_simualtion()
-        self.battery.init_history()
+        self.battery.reset()
         pass
 
     def observation(self):
@@ -257,6 +256,15 @@ class Dynamic_environment:
         self.time_step += 1
         self.planning.append(supply)
         return step_info
+
+    def gym_step(self, supply):
+        power = self.resource[self.time_step]
+        self.battery.step(supply, power)
+        step_info = (self.observation(), self.reward(supply), self.done(), self.info())
+        self.time_step += 1
+        self.planning.append(supply)
+        return step_info
+
 
     def step_over_time(self):
         if self.management.type == 'predictive':
