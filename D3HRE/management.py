@@ -269,7 +269,7 @@ class Dynamic_environment:
                                       ).astype(np.float32)
             return normalized_obs
         else:
-            return (genreated_from_resource, current_energy, self.demand[self.time_step])
+            return battery_observation
 
     def reward(self, supply):
         points = 0
