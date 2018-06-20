@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+from sklearn import preprocessing
 
 def construct_environment_demo(power_dataframe, battery_capacity):
     aggregated_power = power_dataframe.cumsum().Power
@@ -187,9 +188,14 @@ class Finite_horizon_optimal_management:
 
 
 class Dynamic_environment:
+
+
+
+
     def __init__(self, battery, resource, management):
         self.battery = battery
         self.resource = resource
+        self._normalize_resource()
         self.resource_list = self.resource.tolist()
         self.management = management
         self.total_time_step = len(self.resource_list)
@@ -197,7 +203,15 @@ class Dynamic_environment:
         self.total_reward = 0
         self.planning = []
         self.set_reward_weight()
+        self.gloden_ratio = (np.sqrt(5) - 1) / 2
 
+    def _normalize_resource(self):
+        self.min_max_scaler = preprocessing.MinMaxScaler([-1, 1])
+        self.normalized_resource = self.min_max_scaler.fit_transform(self.resource.values.reshape(-1, 1))
+
+    def _battety_transform(self, energy):
+        normalized_battery = (energy/self.battery.capacity) * 2 -1
+        return normalized_battery
 
     def set_reward_weight(self):
         self.reach_reward = 10
@@ -212,7 +226,7 @@ class Dynamic_environment:
         """
         self.prop_load = result_df.Prop_load
         self.hotel_load = result_df.Hotel_load
-
+        self.demand = self.prop_load + self.hotel_load
 
 
     def reset(self):
@@ -223,10 +237,39 @@ class Dynamic_environment:
         self.time_step = 0
         self.total_reward = 0
         self.battery.reset()
-        pass
 
-    def observation(self):
-        return self.battery.observation()
+        demand_init = self.demand.iloc[0]
+
+        resource_norm_init = self.normalized_resource[0]
+        energy_norm_init = self.battery.init_charge * 2 - 1
+        demand_norm_init = self.min_max_scaler.transform(demand_init)[0]
+
+        init_state = np.array([resource_norm_init,
+                               energy_norm_init,
+                               demand_norm_init]).astype(np.float32)
+
+        return init_state
+
+    def observation(self, normalize=False):
+        battery_observation = self.battery.observation()
+        current_energy = battery_observation['current_energy']
+        if not isinstance(current_energy, np.float64):
+            current_energy = current_energy[0][0]
+        usable_capacity = battery_observation['usable_capacity']
+        genreated_from_resource = self.normalized_resource[self.time_step].astype(np.float32)[0]
+
+        if normalize == True:
+            demand = self.demand.iloc[self.time_step]
+
+            resource_norm= self.normalized_resource[self.time_step][0]
+            energy_norm = ((current_energy / self.battery.capacity) * 2 - 1)
+            demand_norm = self.min_max_scaler.transform(demand)[0][0]
+
+            normalized_obs = np.array([resource_norm, energy_norm, demand_norm]
+                                      ).astype(np.float32)
+            return normalized_obs
+        else:
+            return (genreated_from_resource, current_energy, self.demand[self.time_step])
 
     def reward(self, supply):
         points = 0
@@ -257,12 +300,26 @@ class Dynamic_environment:
         self.planning.append(supply)
         return step_info
 
-    def gym_step(self, supply):
+    def gym_step(self, norm_supply):
+
+        #  ↓ ↓ ↓ ↓ ↓ ↓ Normalized variables ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
+        supply = self.min_max_scaler.inverse_transform(norm_supply[0] * self.gloden_ratio)
+        #  ↑ ↑ ↑ ↑ ↑ ↑ Normalized variables ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑
+
+        #  ↓ ↓ ↓ ↓ ↓ ↓ Raw        variables ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
         power = self.resource[self.time_step]
         self.battery.step(supply, power)
-        step_info = (self.observation(), self.reward(supply), self.done(), self.info())
-        self.time_step += 1
+        reward = self.reward(supply)
         self.planning.append(supply)
+        #  ↑ ↑ ↑ ↑ ↑ ↑ Raw        variables ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑
+
+        #  ↓ ↓ ↓ ↓ ↓ ↓ Normalized variables ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
+        obs = self.observation(normalize = True)
+        #  ↑ ↑ ↑ ↑ ↑ ↑ Normalized variables ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑
+
+        step_info = (obs, reward, self.done(), self.info())
+        self.time_step += 1
+
         return step_info
 
 
