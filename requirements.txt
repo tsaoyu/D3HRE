@@ -4,6 +4,7 @@ visilibity
 numpy
 scipy
 pandas
+sklearn
 xarray
 dask[complete]
 netCDF4
