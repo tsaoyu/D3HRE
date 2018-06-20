@@ -4,6 +4,7 @@ Data Driven Dynamic Hybrid Renewable Energy (D3HRE) is a software suite to study
 [![Travis](https://travis-ci.org/tsaoyu/D3HRE.svg?branch=master)](https://travis-ci.org/tsaoyu/D3HRE)
 [![codecov](https://codecov.io/gh/tsaoyu/D3HRE/branch/master/graph/badge.svg)](https://codecov.io/gh/tsaoyu/D3HRE)
 [![DOI](https://zenodo.org/badge/129913383.svg)](https://zenodo.org/badge/latestdoi/129913383)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Ftsaoyu%2FD3HRE.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Ftsaoyu%2FD3HRE?ref=badge_shield)
 
 **Simulation:** D3HRE is able to simulate the hybrid renewable energy system on moving platforms at global scale. For example, the following study shows wind and solar power on a cross Atlantic mission taken by an autonomous surface vehicle. 
 
@@ -44,3 +45,7 @@ visilibity
 If you are using `D3HRE` in your research, please consider cite this software use DOI provided. 
 
 
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Ftsaoyu%2FD3HRE.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Ftsaoyu%2FD3HRE?ref=badge_large)
