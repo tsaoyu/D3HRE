@@ -303,14 +303,14 @@ class Dynamic_environment:
     def gym_step(self, norm_supply):
 
         #  ↓ ↓ ↓ ↓ ↓ ↓ Normalized variables ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
-        supply = self.min_max_scaler.inverse_transform(norm_supply[0] * self.gloden_ratio)
+        plan = self.min_max_scaler.inverse_transform(norm_supply[0] * self.gloden_ratio)
         #  ↑ ↑ ↑ ↑ ↑ ↑ Normalized variables ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑
 
         #  ↓ ↓ ↓ ↓ ↓ ↓ Raw        variables ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
         power = self.resource[self.time_step]
-        self.battery.step(supply, power)
+        supply = self.battery.step(plan, power, gym=True)
         reward = self.reward(supply)
-        self.planning.append(supply)
+        self.planning.append(plan)
         #  ↑ ↑ ↑ ↑ ↑ ↑ Raw        variables ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑
 
         #  ↓ ↓ ↓ ↓ ↓ ↓ Normalized variables ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
