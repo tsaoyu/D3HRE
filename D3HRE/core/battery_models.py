@@ -225,7 +225,10 @@ class Battery_managed:
         self.battery_energy_history = []
         self.SOC = []
 
-    def step(self, demand,  power):
+    def step(self, demand,  power, gym = False):
+
+        if gym == True:
+            demand = demand[0][0]
 
         if power >= demand:
             self.supply_history.append(demand)
@@ -283,6 +286,9 @@ class Battery_managed:
         self.battery_energy_history.append(self.energy)
         self.SOC.append(self.energy / self.capacity)
 
+        if gym == True:
+            return self.supply_history[-1]
+        
     def history(self):
         battery_history = np.vstack(
             (
