@@ -189,9 +189,6 @@ class Finite_horizon_optimal_management:
 
 class Dynamic_environment:
 
-
-
-
     def __init__(self, battery, resource, management):
         self.battery = battery
         self.resource = resource
@@ -212,6 +209,9 @@ class Dynamic_environment:
     def _battety_transform(self, energy):
         normalized_battery = (energy/self.battery.capacity) * 2 -1
         return normalized_battery
+
+    def get_scaler(self):
+        return self.min_max_scaler
 
     def set_reward_weight(self):
         self.reach_reward = 10
@@ -237,6 +237,7 @@ class Dynamic_environment:
         self.time_step = 0
         self.total_reward = 0
         self.battery.reset()
+        self.planning = []
 
         demand_init = self.demand.iloc[0]
 
@@ -293,11 +294,12 @@ class Dynamic_environment:
     def info(self):
         pass
 
-    def step(self, supply, power):
-        self.battery.step(supply, power)
+    def step(self, plan, generated):
+        self.battery.step(plan, generated)
+        supply = self.battery.supply_history[-1]
         step_info = (self.observation(), self.reward(supply), self.done(), self.info())
         self.time_step += 1
-        self.planning.append(supply)
+        self.planning.append(plan)
         return step_info
 
     def gym_step(self, norm_supply):
@@ -307,10 +309,11 @@ class Dynamic_environment:
         #  ↑ ↑ ↑ ↑ ↑ ↑ Normalized variables ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑
 
         #  ↓ ↓ ↓ ↓ ↓ ↓ Raw        variables ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
-        power = self.resource[self.time_step]
-        supply = self.battery.step(plan, power, gym=True)
+        generated = self.resource[self.time_step]
+        supply = self.battery.step(plan, generated, gym=True)
+        status = self.battery.status[-1]
         reward = self.reward(supply)
-        self.planning.append(plan)
+        self.planning.append(plan[0][0])
         #  ↑ ↑ ↑ ↑ ↑ ↑ Raw        variables ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑
 
         #  ↓ ↓ ↓ ↓ ↓ ↓ Normalized variables ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
