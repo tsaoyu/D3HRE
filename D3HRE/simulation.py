@@ -14,7 +14,20 @@ from D3HRE.core.navigation_utility import ocean_current_processing
 
 
 class Task:
+    """
+    Task is a high level object consist of mission object, vehicle object and
+    power consumption list.
+    """
     def __init__(self, mission, vehicle, power_consumption_list):
+        """
+
+        :param mission: object should have df attribute that return the mission
+        DataFrame
+        :param vehicle: object should have prop_power() method that return
+        propulsion power of the vehicle
+        :param power_consumption_list: dictionary consist of components with power
+        requirements and duty cycle
+        """
         self.mission = mission
         self.vehicle = vehicle
         self.power_consumption_list = power_consumption_list
@@ -22,15 +35,30 @@ class Task:
         self.get_load_demand()
 
     def get_ocean_current(self):
+        """
+        Get ocean current for maritime vehicles.
+        :return: None
+        """
         self.ocean_current_df = ocean_current_processing(self.mission.df)
         pass
 
     def get_hotel_load(self, strategy='normal'):
+        """
+        Get hotel load of the vehicles.
+        :param strategy: str optinal 'full-power' for continuous power output
+        'normal' for duty cycle controlled power consumption generation
+        :return: hotel_load dataFrame
+        """
         hotel = HotelLoad(self.mission, self.power_consumption_list, strategy)
         self.hotel_load = hotel.generate_power_consumption_timeseries()
         return self.hotel_load
 
     def get_propulsion_load(self, current=True):
+        """
+
+        :param current: bool default True, use ocean current for the vehicle
+        :return: prop_load dataFrame
+        """
         if current == False:
             self.prop_load = self.vehicle.prop_power()
         else:
@@ -110,7 +138,12 @@ class Reactive_simulation(Task):
         self.resource_df['global_horizontal'] = self.resource_df.SWGDN
         self.resource_df['diffuse_fraction'] = brl_model.location_run(self.resource_df)
         self.resource_df['solar_power'] = pv.run_plant_model_location(
-            self.resource_df, self.tilt, self.azim, self.tracking, self.capacity
+            self.resource_df,
+            self.tilt,
+            self.azim,
+            self.tracking,
+            self.capacity,
+            config = self.config
         )
         self.solar['solar_power'] = self.resource_df['solar_power']
         return self.solar['solar_power']
