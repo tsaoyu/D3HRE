@@ -90,6 +90,12 @@ def test_constraint_mixed_objective_optimisation():
     for opt_x, constraint_x in zip(champion_x, mix_opt.constraints()):
         assert opt_x <= constraint_x
 
+def test_constraint_mixed_objective_optimisation_island():
+    con_mix_opt = Constraint_mixed_objective_optimisation(task, config=config)
+    mix_opt = Mixed_objective_optimization_function(task, config=config)
+    champion, champion_x = con_mix_opt.island_run()
+    for opt_x, constraint_x in zip(champion_x, mix_opt.constraints()):
+        assert opt_x <= constraint_x
 
 
 

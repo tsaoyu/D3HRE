@@ -384,6 +384,15 @@ class Constraint_mixed_objective_optimisation(Mixed_objective_optimization_funct
         self.champion = pop.champion_x
         return pop.champion_f, pop.champion_x
 
+    def island_run(self):
+        algo = pg.algorithm(pg.pso(gen=self.generation))
+        pop = pg.population(self.problem, self.pop_size)
+        island = pg.island(algo=algo, pop=pop, udi=pg.mp_island())
+        island.evolve()
+        island.wait()
+        pop = island.get_population()
+        return pop.champion_f, pop.champion_x
+
     def get_lpsp(self):
         solar_area_opt, wind_area_opt, battery_capacity = self.champion
         return self.rea_sim.run(solar_area_opt, wind_area_opt, battery_capacity)
