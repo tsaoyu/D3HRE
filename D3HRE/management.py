@@ -239,15 +239,18 @@ class Dynamic_environment:
         self.battery.reset()
         self.planning = []
 
-        demand_init = self.demand.iloc[0]
+        prop_demand_init = self.prop_load.iloc[0]
+        hotel_demand_init = self.hotel_load.iloc[0]
 
         resource_norm_init = self.normalized_resource[0]
         energy_norm_init = self.battery.init_charge * 2 - 1
-        demand_norm_init = self.min_max_scaler.transform(demand_init)[0]
+        prop_demand_norm_init = self.min_max_scaler.transform(prop_demand_init)[0]
+        hotel_demand_norm_init = self.min_max_scaler.transform(hotel_demand_init)[0]
 
         init_state = np.array([resource_norm_init,
                                energy_norm_init,
-                               demand_norm_init]).astype(np.float32)
+                               prop_demand_norm_init,
+                               hotel_demand_norm_init]).astype(np.float32)
 
         return init_state
 
@@ -260,13 +263,15 @@ class Dynamic_environment:
         genreated_from_resource = self.normalized_resource[self.time_step].astype(np.float32)[0]
 
         if normalize == True:
-            demand = self.demand.iloc[self.time_step]
+            prop_demand = self.prop_load.iloc[self.time_step]
+            hotel_demand = self.hotel_load.iloc[self.time_step]
 
             resource_norm= self.normalized_resource[self.time_step][0]
             energy_norm = ((current_energy / self.battery.capacity) * 2 - 1)
-            demand_norm = self.min_max_scaler.transform(demand)[0][0]
+            prop_demand_norm = self.min_max_scaler.transform(prop_demand)[0][0]
+            hotel_demand_norm = self.min_max_scaler.transform(hotel_demand)[0][0]
 
-            normalized_obs = np.array([resource_norm, energy_norm, demand_norm]
+            normalized_obs = np.array([resource_norm, energy_norm, prop_demand_norm, hotel_demand_norm]
                                       ).astype(np.float32)
             return normalized_obs
         else:
