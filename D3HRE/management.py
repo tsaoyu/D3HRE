@@ -271,7 +271,10 @@ class Dynamic_environment:
             prop_demand_norm = self.min_max_scaler.transform(prop_demand)[0][0]
             hotel_demand_norm = self.min_max_scaler.transform(hotel_demand)[0][0]
 
-            normalized_obs = np.array([resource_norm, energy_norm, prop_demand_norm, hotel_demand_norm]
+            normalized_obs = np.array([resource_norm,
+                                       energy_norm,
+                                       prop_demand_norm,
+                                       hotel_demand_norm]
                                       ).astype(np.float32)
             return normalized_obs
         else:
