@@ -293,11 +293,12 @@ class Dynamic_environment:
         return points
 
     def done(self):
-        if self.time_step < self.total_time_step:
-            return False
-        elif self.time_step == self.total_time_step:
+        if self.time_step >= self.total_time_step-1:
             return True
-        pass
+        else:
+            return False
+
+
 
     def info(self):
         pass
