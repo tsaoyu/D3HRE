@@ -22,7 +22,7 @@ except KeyError:
     USERNAME = input('MERRA-2 Username:')
     PASSWORD = getpass.getpass('MERRA-2 Password:')
 
-NUMBER_OF_CONNECTIONS = config['MERRA2']['Connections']
+NUMBER_OF_CONNECTIONS = int(config['MERRA2']['Connections'])
 MERRA2_DATA_DIR = config['MERRA2']['Datadir']
 
 OSCAR_DATA_DIR = config['OSCAR']['Datadir']
