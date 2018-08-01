@@ -314,7 +314,7 @@ class Dynamic_environment:
     def gym_step(self, norm_supply):
 
         #  ↓ ↓ ↓ ↓ ↓ ↓ Normalized variables ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
-        plan = self.min_max_scaler.inverse_transform(norm_supply[0] * self.gloden_ratio)
+        plan = self.min_max_scaler.inverse_transform(norm_supply[0])
         #  ↑ ↑ ↑ ↑ ↑ ↑ Normalized variables ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑
 
         #  ↓ ↓ ↓ ↓ ↓ ↓ Raw        variables ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
