@@ -14,6 +14,7 @@ import urllib.error
 import urllib.request
 import re
 import ruamel.yaml as yaml
+import tqdm
 
 log = logging.getLogger('opendap_download')
 
@@ -99,7 +100,7 @@ class DownloadManager(object):
         os.makedirs(self.download_path, exist_ok=True)
         # p = multiprocessing.Pool(nr_of_processes)
         p = Threadpool(nr_of_threads)
-        p.map(self._mp_download_wrapper, self.download_urls)
+        list(tqdm.tqdm(p.imap(self._mp_download_wrapper, self.download_urls), total=len(self.download_urls)))
         p.close()
         p.join()
 

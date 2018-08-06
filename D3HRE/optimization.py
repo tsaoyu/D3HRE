@@ -374,12 +374,13 @@ class Constraint_mixed_objective_optimisation(Mixed_objective_optimization_funct
             self.generation = self.config['optimization']['method']['pso']['generation']
             self.pop_size = self.config['optimization']['method']['pso']['population']
         except KeyError:
-            self.generation = 80
+            self.generation = 100
             self.pop_size = 100
 
     def run(self):
         algo = pg.algorithm(pg.pso(gen=self.generation))
         pop = pg.population(self.problem, self.pop_size)
+        print("Start optimisation process...")
         pop = algo.evolve(pop)
         self.champion = pop.champion_x
         return pop.champion_f, pop.champion_x
