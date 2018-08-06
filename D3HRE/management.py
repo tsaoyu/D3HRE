@@ -201,6 +201,7 @@ class Dynamic_environment:
         self.planning = []
         self.set_reward_weight()
         self.gloden_ratio = (np.sqrt(5) - 1) / 2
+        self.reward_history = []
 
     def _normalize_resource(self):
         self.min_max_scaler = preprocessing.MinMaxScaler([-1, 1])
@@ -290,6 +291,8 @@ class Dynamic_environment:
         else:
             points += self.not_reach_penalty
 
+        if self.done() == False:
+            self.reward_history.append(points)
         return points
 
     def done(self):
@@ -297,7 +300,6 @@ class Dynamic_environment:
             return True
         else:
             return False
-
 
 
     def info(self):
@@ -374,9 +376,11 @@ class Dynamic_environment:
     def simulation_result(self, name=None):
         battery_history = self.battery.history()
         history = pd.DataFrame(
-            columns=['SOC', 'Battery', 'Unmet', 'Waste', 'Supply', 'Planned'],
+            columns=['SOC', 'Battery', 'Unmet', 'Waste', 'Supply', 'Planned', 'Reward'],
             index=self.resource.index,
-            data=np.vstack((battery_history, np.array(self.planning))).T,
+            data=np.vstack((battery_history,
+                            np.array(self.planning),
+                            np.array(self.reward_history))).T,
         )
         if name is not None:
             history.name = name
