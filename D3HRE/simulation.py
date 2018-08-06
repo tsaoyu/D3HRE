@@ -121,6 +121,7 @@ class Reactive_simulation(Task):
     @lru_cache(maxsize=32)
     def wind_power_simulation(self):
         wind_df = pd.DataFrame()
+        print("Start wind energy power simulation...")
         wind_df['wind_raw'] = self.resource_df.V2.apply(
             lambda x: power_from_turbine(
                 x, 1, self.power_coefficient, self.cut_in_speed, self.rated_speed
@@ -135,6 +136,7 @@ class Reactive_simulation(Task):
     @lru_cache(maxsize=32)
     def solar_power_simulation(self):
         self.solar = pd.DataFrame()
+        print("Start solar energy power simulation...")
         self.resource_df['global_horizontal'] = self.resource_df.SWGDN
         self.resource_df['diffuse_fraction'] = brl_model.location_run(self.resource_df)
         self.resource_df['solar_power'] = pv.run_plant_model_location(
