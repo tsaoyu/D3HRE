@@ -239,6 +239,7 @@ class Dynamic_environment:
         self.total_reward = 0
         self.battery.reset()
         self.planning = []
+        self.reward_history = []
 
         prop_demand_init = self.prop_load.iloc[0]
         hotel_demand_init = self.hotel_load.iloc[0]
@@ -291,8 +292,7 @@ class Dynamic_environment:
         else:
             points += self.not_reach_penalty
 
-        if self.done() == False:
-            self.reward_history.append(points)
+        self.reward_history.append(points)
         return points
 
     def done(self):
