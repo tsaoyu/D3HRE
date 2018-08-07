@@ -8,7 +8,7 @@ sklearn
 xarray
 dask[complete]
 netCDF4
-tdqm
+tqdm
 
 ephem
 seaborn
