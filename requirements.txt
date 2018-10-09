@@ -8,12 +8,12 @@ sklearn
 xarray
 dask[complete]
 netCDF4
-tdqm
+tqdm
 
 ephem
 seaborn
 gpxpy
-pygmo
+pygmo==2.6
 nvector
 
 pytest
