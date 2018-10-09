@@ -295,6 +295,56 @@ class Single_mixed_objective_optimization_function:
         return 1
 
 
+class Single_solar_mixed_objective_optimization_function:
+    def __init__(
+        self,
+        route,
+        start_time,
+        speed,
+        demand,
+        vehicle,
+        weight=[210, 1, 10000],
+        **kwargs
+    ):
+        self.route = route
+        self.start_time = start_time
+        self.speed = speed
+        self.demand = demand
+        self.weight = weight
+        self.vehicle = vehicle
+        self.parameters = kwargs
+
+    def dimension(self):
+        max_surface_area = self.vehicle.maximum_surface_area()
+        max_battery_volume = self.vehicle.maximum_battery_volume()
+        return [max_surface_area, max_battery_volume]
+
+    def fitness(self, x):
+        weight = self.weight
+        obj = (
+            x[0] * weight[0]
+            + x[1] * weight[1]
+            + weight[3]
+            * objective_warpper(
+                x[0],
+                x[1],
+                self.demand,
+                self.route,
+                self.start_time,
+                self.speed,
+                self.parameters,
+            )
+        )
+        return [obj]
+
+    def get_bounds(self):
+        return [0, 0], self.dimension()
+
+    def get_nobj(self):
+        return 1
+
+
+
 class Mixed_objective_optimization_function:
     def __init__(self, Task, config={}):
         self.Task = Task

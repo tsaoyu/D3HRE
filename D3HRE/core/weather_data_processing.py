@@ -1,5 +1,48 @@
+import ephem
+import math
 import numpy as np
 from D3HRE.core.navigation_utility import calculate_initial_compass_bearing
+
+
+class SolarSystem():
+
+    def __init__(self):
+        sun = ephem.Sun()
+        self.sun = sun
+
+    def set_date(self, date):
+        self.obs.date = ephem.Date(date)
+
+    def add_observer(self, lat, lon):
+        obs = ephem.Observer()
+        obs.lat = lat
+        obs.lon = lon
+        self.obs = obs
+        self.lat, self.lon = lat, lon
+
+    def move_observer(self, delta_lat, delta_lon):
+        self.obs.lat = (float(self.obs.lat) - delta_lat)
+        self.obs.lon = (float(self.obs.lon) - delta_lon)
+        # print(self.obs.lat, self.obs.lon)
+        return [math.degrees(self.obs.lat), math.degrees(self.obs.lon)]
+
+    def get_solar_angle(self):
+        self.sun.compute(self.obs)
+        return [self.sun.az, self.sun.alt]
+
+    def get_zenith_cosine(self):
+        self.sun.compute(self.obs)
+        return math.sin(self.sun.alt)
+
+
+
+def calculate_zenith_cosine(time, lat, lon, min_zenith_cosine=0.065):
+    solar_system = SolarSystem()
+    solar_system.add_observer(str(lat), str(lon))
+    solar_system.set_date(time)
+    zenith_cosine = max(min_zenith_cosine,
+                       solar_system.get_zenith_cosine())
+    return zenith_cosine
 
 
 def resource_df_processing(dataframe):
@@ -13,12 +56,23 @@ def resource_df_processing(dataframe):
         heading (degrees), Va (apparent wind speed), apparent_wind_direction(degrees)
     """
 
+
+    # Clearness index processing
+    zenith_cosine_list = []
+
+    for index, row in dataframe.iterrows():
+        zenith_cosine = calculate_zenith_cosine(index, row.lat, row.lon)
+        zenith_cosine_list.append(zenith_cosine)
+
+    dataframe['zenith_cos'] = zenith_cosine_list
+    dataframe['kt'] = dataframe.SWGDN / (dataframe.SWTDN * zenith_cosine_list)
+    # Maximum clearness index for hourly data pvlib
+    dataframe.loc[dataframe.kt > 0.82, 'kt'] = 0.82
+
+
     # Temperature processing
     dataframe['temperature'] = dataframe.T2M - 273.15
 
-    # Clearness index processing
-
-    dataframe['kt'] = dataframe.SWGDN / dataframe.SWTDN
 
     # Wind speed at 2 metres height
     dataframe['V2'] = np.sqrt(dataframe.V2M ** 2 + dataframe.U2M ** 2)
