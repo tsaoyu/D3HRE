@@ -3,6 +3,7 @@ python:
 - '3.4'
 - '3.5'
 - '3.6'
+- '3.7'
 before_install:
 - openssl aes-256-cbc -K $encrypted_555b1a8e5847_key -iv $encrypted_555b1a8e5847_iv
   -in ./tests/.d3hre.enc -out .d3hre -d
