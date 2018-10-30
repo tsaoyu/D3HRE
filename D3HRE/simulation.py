@@ -178,9 +178,9 @@ class Reactive_simulation(Task):
         else:
             model = Soc_model_variable_load(Battery(battery_capacity), supply, load)
 
-        prop_load = (self.Task.load_demand - self.Task.hotel_load).as_matrix()
-        load_demand = self.Task.load_demand.as_matrix()
-        hotel_load = self.Task.hotel_load.as_matrix()
+        prop_load = (self.Task.load_demand - self.Task.hotel_load).values
+        load_demand = self.Task.load_demand.values
+        hotel_load = self.Task.hotel_load.values
 
         load_demand_history = np.vstack((load_demand, prop_load, hotel_load))
         load_demand_history_df = pd.DataFrame(
