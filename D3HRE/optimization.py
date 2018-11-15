@@ -427,16 +427,23 @@ class Constraint_mixed_objective_optimisation(Mixed_objective_optimization_funct
             self.generation = 100
             self.pop_size = 100
 
-    def run(self):
-        algo = pg.algorithm(pg.pso(gen=self.generation))
+    def run(self, converge_info=False):
+        uda = pg.pso(gen=self.generation)
+        algo = pg.algorithm(uda)
+        if converge_info == True:
+            algo.set_verbosity(1)
         pop = pg.population(self.problem, self.pop_size)
         print("Start optimisation process...")
         pop = algo.evolve(pop)
         self.champion = pop.champion_x
+        if converge_info == True:
+            self.log = algo.extract(type(uda)).get_log()
+            self.pop = pop
         return pop.champion_f, pop.champion_x
 
     def island_run(self):
-        algo = pg.algorithm(pg.pso(gen=self.generation))
+        uda = pg.pso(gen=self.generation)
+        algo = pg.algorithm(uda)
         pop = pg.population(self.problem, self.pop_size)
         island = pg.island(algo=algo, pop=pop, udi=pg.mp_island())
         island.evolve()
@@ -454,6 +461,8 @@ class Constraint_mixed_objective_optimisation(Mixed_objective_optimization_funct
 
     def get_resource_df(self):
         return self.rea_sim.resource_df
+
+
 
 
 class Simulation_based_optimization:
