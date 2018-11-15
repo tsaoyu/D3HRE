@@ -19,6 +19,13 @@ class HotelLoad:
         self.strategy = strategy
         self.mission = mission
 
+        power_consumption_list = power_consumption_list.copy()
+        try:
+            np.random.seed(power_consumption_list['seed'])
+            del power_consumption_list['seed']
+        except KeyError:
+            np.random.seed(123)
+
         self.power_consumption_list = power_consumption_list
         self.components = list(self.power_consumption_list.keys())
 
@@ -50,7 +57,6 @@ class HotelLoad:
             for component in self.components:
                 if self.power_consumption_list[component]['duty_cycle'] != 1:
                     duty_cycle = self.power_consumption_list[component]['duty_cycle']
-                    #np.random.seed(123)
                     performance = duty_cycle + np.random.randn() * 0.1
                 else:
                     performance = 1
