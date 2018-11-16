@@ -54,5 +54,5 @@ def resistance_power(dataframe, area):
         * dataframe.relative_wind_cos
         * dataframe.speed
     )
-    power_correction = min(0, power_correction)
+    power_correction[power_correction <0] = 0
     return power_correction
