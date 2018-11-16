@@ -45,6 +45,8 @@ class HotelLoad:
     def generate_power_consumption(self):
 
         system_power_consumption = 0
+        critical_hotel_load_consumption = 0
+
 
         if self.strategy == 'full-power':
             performance = 1
@@ -54,12 +56,15 @@ class HotelLoad:
                 )
 
         elif self.strategy == 'normal':
+
             for component in self.components:
                 if self.power_consumption_list[component]['duty_cycle'] != 1:
                     duty_cycle = self.power_consumption_list[component]['duty_cycle']
                     performance = duty_cycle + np.random.randn() * 0.1
                 else:
                     performance = 1
+                    critical_hotel_load_consumption += self.component_power_consumption(component,
+                                                                            performance)
                 system_power_consumption += self.component_power_consumption(
                     component, performance
                 )
@@ -67,17 +72,22 @@ class HotelLoad:
         else:
             print('This is not supported yet!')
 
-        return system_power_consumption
+        return system_power_consumption, critical_hotel_load_consumption
 
     def generate_power_consumption_timeseries(self):
         duration = len(self.mission.df.index)
-        power_consumption_list = [
+        generated_power_consumption_list = np.array([
             self.generate_power_consumption() for t in range(int(duration))
-        ]
-        load_demand_ts = pd.Series(
+        ])
+        power_consumption_list = generated_power_consumption_list.T[0]
+        critical_hotel_load_list = generated_power_consumption_list.T[1]
+        hotel_load_ts = pd.Series(
             data=power_consumption_list, index=self.mission.df.index
         )
-        return load_demand_ts
+        critical_hotel_load_ts = pd.Series(
+            data=critical_hotel_load_list, index=self.mission.df.index
+        )
+        return hotel_load_ts, critical_hotel_load_ts
 
 
 if __name__ == '__main__':

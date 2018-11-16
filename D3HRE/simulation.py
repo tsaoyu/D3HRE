@@ -50,7 +50,7 @@ class Task:
         :return: hotel_load dataFrame
         """
         hotel = HotelLoad(self.mission, self.power_consumption_list, strategy)
-        self.hotel_load = hotel.generate_power_consumption_timeseries()
+        self.hotel_load, self.critical_hotel_load = hotel.generate_power_consumption_timeseries()
         return self.hotel_load
 
     def get_propulsion_load(self, current=True):
@@ -181,12 +181,13 @@ class Reactive_simulation(Task):
         prop_load = (self.Task.load_demand - self.Task.hotel_load).values
         load_demand = self.Task.load_demand.values
         hotel_load = self.Task.hotel_load.values
+        critical_load = prop_load + self.Task.critical_load.values
 
-        load_demand_history = np.vstack((load_demand, prop_load, hotel_load))
+        load_demand_history = np.vstack((load_demand, prop_load, hotel_load, critical_load))
         load_demand_history_df = pd.DataFrame(
             data=load_demand_history.T,
             index=self.Task.mission.df.index,
-            columns=['Load_demand', 'Prop_load', 'Hotel_load'],
+            columns=['Load_demand', 'Prop_load', 'Hotel_load', 'Critical_load'],
         )
         load_demand_history_df = full_day_cut(load_demand_history_df)
 
@@ -222,17 +223,17 @@ class Reactive_simulation(Task):
         else:
             model = Soc_model_variable_load(Battery(battery_capacity), supply, load)
 
-        prop_load = (
-            self.Task.load_demand[:post_run_len] - self.Task.hotel_load[:post_run_len]
-        ).as_matrix()
-        load_demand = self.Task.load_demand[:post_run_len].as_matrix()
-        hotel_load = self.Task.hotel_load[:post_run_len].as_matrix()
 
-        load_demand_history = np.vstack((load_demand, prop_load, hotel_load))
+        prop_load = (self.Task.load_demand - self.Task.hotel_load).values
+        load_demand = self.Task.load_demand.values
+        hotel_load = self.Task.hotel_load.values
+        critical_load = prop_load + self.Task.critical_load.values
+
+        load_demand_history = np.vstack((load_demand, prop_load, hotel_load, critical_load))
         load_demand_history_df = pd.DataFrame(
-            data=load_demand_history[:post_run_len].T,
-            index=self.Task.mission.df[:post_run_len].index,
-            columns=['Load_demand', 'Prop_load', 'Hotel_load'],
+            data=load_demand_history.T,
+            index=self.Task.mission.df.index,
+            columns=['Load_demand', 'Prop_load', 'Hotel_load', 'Critical_load'],
         )
 
         load_demand_history_df = full_day_cut(load_demand_history_df)
