@@ -181,7 +181,7 @@ class Reactive_simulation(Task):
         prop_load = (self.Task.load_demand - self.Task.hotel_load).values
         load_demand = self.Task.load_demand.values
         hotel_load = self.Task.hotel_load.values
-        critical_load = prop_load + self.Task.critical_load.values
+        critical_load = prop_load + self.Task.critical_hotel_load.values
 
         load_demand_history = np.vstack((load_demand, prop_load, hotel_load, critical_load))
         load_demand_history_df = pd.DataFrame(
@@ -227,7 +227,7 @@ class Reactive_simulation(Task):
         prop_load = (self.Task.load_demand - self.Task.hotel_load).values
         load_demand = self.Task.load_demand.values
         hotel_load = self.Task.hotel_load.values
-        critical_load = prop_load + self.Task.critical_load.values
+        critical_load = prop_load + self.Task.critical_hotel_load.values
 
         load_demand_history = np.vstack((load_demand, prop_load, hotel_load, critical_load))
         load_demand_history_df = pd.DataFrame(

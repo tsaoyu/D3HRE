@@ -215,10 +215,10 @@ class Dynamic_environment:
         return self.min_max_scaler
 
     def set_reward_weight(self):
-        self.reach_reward = 10
+        self.reach_reward = 20
         self.not_reach_penalty = -50
-        self.extra_power_reward_factor = 0.05
-        self.maximum_extra_power_reward = 10
+        self.extra_power_reward_factor = 0.1
+        self.maximum_extra_power_reward = 5
 
     def set_demand(self, result_df):
         """
@@ -227,6 +227,7 @@ class Dynamic_environment:
         """
         self.prop_load = result_df.Prop_load
         self.hotel_load = result_df.Hotel_load
+        self.critical_load = result_df.Critical_load
         self.demand = self.prop_load + self.hotel_load
 
 
@@ -243,15 +244,17 @@ class Dynamic_environment:
 
         prop_demand_init = self.prop_load.iloc[0]
         hotel_demand_init = self.hotel_load.iloc[0]
+        critical_demand_init = self.critical_load.iloc[0]
 
         resource_norm_init = self.normalized_resource[0]
         energy_norm_init = self.battery.init_charge * 2 - 1
         prop_demand_norm_init = self.min_max_scaler.transform(prop_demand_init)[0]
         hotel_demand_norm_init = self.min_max_scaler.transform(hotel_demand_init)[0]
+        critical_demand_norm_init = self.min_max_scaler.transform(critical_demand_init)[0]
 
         init_state = np.array([resource_norm_init,
                                energy_norm_init,
-                               prop_demand_norm_init,
+                               critical_demand_norm_init,
                                hotel_demand_norm_init]).astype(np.float32)
 
         return init_state
@@ -267,15 +270,17 @@ class Dynamic_environment:
         if normalize == True:
             prop_demand = self.prop_load.iloc[self.time_step]
             hotel_demand = self.hotel_load.iloc[self.time_step]
+            critical_demand_init = self.critical_load.iloc[self.time_step]
 
             resource_norm= self.normalized_resource[self.time_step][0]
             energy_norm = ((current_energy / self.battery.capacity) * 2 - 1)
             prop_demand_norm = self.min_max_scaler.transform(prop_demand)[0][0]
             hotel_demand_norm = self.min_max_scaler.transform(hotel_demand)[0][0]
+            critical_demand_norm_init = self.min_max_scaler.transform(critical_demand_init)[0]
 
             normalized_obs = np.array([resource_norm,
                                        energy_norm,
-                                       prop_demand_norm,
+                                       critical_demand_norm_init,
                                        hotel_demand_norm]
                                       ).astype(np.float32)
             return normalized_obs
@@ -284,9 +289,9 @@ class Dynamic_environment:
 
     def reward(self, supply):
         points = 0
-        if supply >= self.prop_load.iloc[self.time_step]:
+        if supply >= self.critical_load.iloc[self.time_step]:
             points += self.reach_reward
-            extra_power = (supply - self.prop_load.iloc[self.time_step])
+            extra_power = (supply - self.critical_load.iloc[self.time_step])
             points += min(extra_power * self.extra_power_reward_factor,
                           self.maximum_extra_power_reward)
         else:
