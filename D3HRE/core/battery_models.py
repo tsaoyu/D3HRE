@@ -156,11 +156,11 @@ class Battery:
             energy_history.append(energy)
             SOC.append(energy / battery_capacity)
 
-            self.SOC = SOC
-            self.energy_history = energy_history
-            self.unmet_history = unmet_history
-            self.waste_history = waste_history
-            self.use_history = use_history
+        self.SOC = SOC
+        self.energy_history = energy_history
+        self.unmet_history = unmet_history
+        self.waste_history = waste_history
+        self.use_history = use_history
 
     def battery_history(self):
         history = np.vstack(
