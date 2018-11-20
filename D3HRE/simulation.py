@@ -157,12 +157,12 @@ class Reactive_simulation(Task):
         )
         supply, load = power_supply.tolist(), self.Task.load_demand.tolist()
         if self.config != {}:
-            model = Soc_model_variable_load(
-                Battery(battery_capacity, config=self.config), supply, load
-            )
+            battery = Battery(battery_capacity, config=self.config)
         else:
-            model = Soc_model_variable_load(Battery(battery_capacity), supply, load)
-        lpsp = model.get_lost_power_supply_probability()
+            battery = Battery(battery_capacity)
+
+        battery.run(supply, load)
+        lpsp = battery.lost_power_supply_probability()
         return lpsp
 
     def result(self, solar_area, wind_area, battery_capacity):
@@ -172,12 +172,12 @@ class Reactive_simulation(Task):
             + self.solar_power_simulation * solar_area
         )
         supply, load = power_supply.tolist(), self.Task.load_demand.tolist()
-        if self.config is not {}:
-            model = Soc_model_variable_load(
-                Battery(battery_capacity, config=self.config), supply, load
-            )
+        if self.config != {}:
+            battery = Battery(battery_capacity, config=self.config)
         else:
-            model = Soc_model_variable_load(Battery(battery_capacity), supply, load)
+            battery = Battery(battery_capacity)
+
+        battery.run(supply, load)
 
         prop_load = (self.Task.load_demand - self.Task.hotel_load).values
         load_demand = self.Task.load_demand.values
@@ -192,7 +192,7 @@ class Reactive_simulation(Task):
         )
         load_demand_history_df = full_day_cut(load_demand_history_df)
 
-        battery_history = model.get_battery_history()
+        battery_history = battery.battery_history()
         battery_history_df = pd.DataFrame(
             data=battery_history.T,
             index=self.df.index,
@@ -219,13 +219,11 @@ class Reactive_simulation(Task):
         supply, load = power_supply[:post_run_len].tolist(), dispatch['Power'].tolist()
 
         if self.config != {}:
-            model = Soc_model_variable_load(
-                Battery(battery_capacity, config=self.config), supply, load
-            )
+            battery = Battery(battery_capacity, config=self.config)
         else:
-            model = Soc_model_variable_load(Battery(battery_capacity), supply, load)
+            battery = Battery(battery_capacity)
 
-
+        battery.run(supply, load)
         prop_load = (self.Task.load_demand - self.Task.hotel_load).values
         load_demand = self.Task.load_demand.values
         hotel_load = self.Task.hotel_load.values
@@ -240,7 +238,7 @@ class Reactive_simulation(Task):
 
         load_demand_history_df = full_day_cut(load_demand_history_df)
 
-        battery_history = model.get_battery_history()
+        battery_history = battery.battery_history()
         battery_history_df = pd.DataFrame(
             data=battery_history[:post_run_len].T,
             index=self.df[:post_run_len].index,
