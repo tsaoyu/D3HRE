@@ -242,15 +242,15 @@ class Dynamic_environment:
         self.planning = []
         self.reward_history = []
 
-        prop_demand_init = self.prop_load.iloc[0]
-        hotel_demand_init = self.hotel_load.iloc[0]
-        critical_demand_init = self.critical_load.iloc[0]
+        prop_demand_init = [[self.prop_load.iloc[0]]]
+        hotel_demand_init = [[self.hotel_load.iloc[0]]]
+        critical_demand_init = [[self.critical_load.iloc[0]]]
 
         resource_norm_init = self.normalized_resource[0]
         energy_norm_init = self.battery.init_charge * 2 - 1
-        prop_demand_norm_init = self.min_max_scaler.transform(prop_demand_init)[0]
-        hotel_demand_norm_init = self.min_max_scaler.transform(hotel_demand_init)[0]
-        critical_demand_norm_init = self.min_max_scaler.transform(critical_demand_init)[0]
+        prop_demand_norm_init = self.min_max_scaler.transform(prop_demand_init)[0][0]
+        hotel_demand_norm_init = self.min_max_scaler.transform(hotel_demand_init)[0][0]
+        critical_demand_norm_init = self.min_max_scaler.transform(critical_demand_init)[0][0]
 
         init_state = np.array([resource_norm_init,
                                energy_norm_init,
@@ -274,9 +274,9 @@ class Dynamic_environment:
 
             resource_norm= self.normalized_resource[self.time_step][0]
             energy_norm = ((current_energy / self.battery.capacity) * 2 - 1)
-            prop_demand_norm = self.min_max_scaler.transform(prop_demand)[0][0]
-            hotel_demand_norm = self.min_max_scaler.transform(hotel_demand)[0][0]
-            critical_demand_norm_init = self.min_max_scaler.transform(critical_demand_init)[0]
+            prop_demand_norm = self.min_max_scaler.transform([[prop_demand]])[0][0]
+            hotel_demand_norm = self.min_max_scaler.transform([[hotel_demand]])[0][0]
+            critical_demand_norm_init = self.min_max_scaler.transform([[critical_demand_init]])[0][0]
 
             normalized_obs = np.array([resource_norm,
                                        energy_norm,
@@ -321,7 +321,7 @@ class Dynamic_environment:
     def gym_step(self, norm_supply):
 
         #  ↓ ↓ ↓ ↓ ↓ ↓ Normalized variables ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
-        plan = self.min_max_scaler.inverse_transform(norm_supply[0])
+        plan = self.min_max_scaler.inverse_transform([norm_supply])
         #  ↑ ↑ ↑ ↑ ↑ ↑ Normalized variables ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑
 
         #  ↓ ↓ ↓ ↓ ↓ ↓ Raw        variables ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓

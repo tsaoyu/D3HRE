@@ -166,6 +166,7 @@ class Reactive_simulation(Task):
         return lpsp
 
     def result(self, solar_area, wind_area, battery_capacity):
+        print('====== Post simulation run ======')
         power_supply = (
             self.wind_power_simulation * wind_area
             + self.solar_power_simulation * solar_area
@@ -208,6 +209,7 @@ class Reactive_simulation(Task):
         return result_df
 
     def post_run(self, solar_area, wind_area, battery_capacity, dispatch):
+        print('====== Post simulation run ======')
         power_supply = (
             self.wind_power_simulation * wind_area
             + self.solar_power_simulation * solar_area
