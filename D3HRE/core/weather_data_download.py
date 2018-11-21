@@ -15,6 +15,8 @@ config = configparser.ConfigParser()
 config_file_path = os.path.expanduser('~/.d3hre')
 config.read(config_file_path)
 
+xr.set_options(file_cache_maxsize=300)
+
 try:
     USERNAME = config['MERRA2']['Username']
     PASSWORD = config['MERRA2']['Password']
@@ -245,11 +247,7 @@ def resource_df_download(
                     url.append(URLS[url_index])
                 download_manager.download_urls = url
                 download_manager.start_download(n)
-            wind_xdata = xr.open_mfdataset(
-                wind_files, concat_dim='time', autoclose=True
-            )
-            # In case of complain on 'Too many files opened', switch autoclose to True,
-            # Data processing will be slower with autoclose option on.
+            wind_xdata = xr.open_mfdataset(wind_files, concat_dim='time')
             wind_df = wind_xdata.to_dataframe()
 
             solar_files = sorted(glob.glob(folder + '/download_solar/MERRA*'))
@@ -268,11 +266,7 @@ def resource_df_download(
                     url.append(URLS[url_index])
                 download_manager.download_urls = url
                 download_manager.start_download(n)
-            solar_xdata = xr.open_mfdataset(
-                solar_files, concat_dim='time', autoclose=True
-            )
-            # In case of complain on 'Too many files opened', switch autoclose to True,
-            # Data processing will be slower with autoclose option on.
+            solar_xdata = xr.open_mfdataset(solar_files, concat_dim='time')
             solar_df = solar_xdata.to_dataframe()
 
             resource_df = pd.concat([solar_df, wind_df], axis=1)
