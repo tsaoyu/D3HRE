@@ -189,7 +189,7 @@ class Finite_horizon_optimal_management:
 
 class Dynamic_environment:
 
-    def __init__(self, battery, resource, management):
+    def __init__(self, battery, resource, management, config={}):
         self.battery = battery
         self.resource = resource
         self._normalize_resource()
@@ -199,7 +199,7 @@ class Dynamic_environment:
         self.time_step = 0
         self.total_reward = 0
         self.planning = []
-        self.set_reward_weight()
+        self.set_reward_weight(config=config)
         self.gloden_ratio = (np.sqrt(5) - 1) / 2
         self.reward_history = []
 
@@ -214,11 +214,17 @@ class Dynamic_environment:
     def get_scaler(self):
         return self.min_max_scaler
 
-    def set_reward_weight(self):
-        self.reach_reward = 20
-        self.not_reach_penalty = -50
-        self.extra_power_reward_factor = 0.1
-        self.maximum_extra_power_reward = 5
+    def set_reward_weight(self, config={}):
+        if config is not None:
+            self.reach_reward = config['management']['reach_reward']
+            self.not_reach_penalty = config['management']['not_reach_penalty']
+            self.extra_power_reward_factor = config['management']['extra_power_reward_factor']
+            self.maximum_extra_power_reward = config['management']['maximum_extra_power_reward']
+        else:
+            self.reach_reward = 20
+            self.not_reach_penalty = -50
+            self.extra_power_reward_factor = 0.1
+            self.maximum_extra_power_reward = 0
 
     def set_demand(self, result_df):
         """
