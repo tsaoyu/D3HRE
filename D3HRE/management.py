@@ -214,17 +214,18 @@ class Dynamic_environment:
     def get_scaler(self):
         return self.min_max_scaler
 
-    def set_reward_weight(self, config={}):
+    def set_reward_weight(self, config=None):
         if config is not None:
-            self.reach_reward = config['management']['reach_reward']
-            self.not_reach_penalty = config['management']['not_reach_penalty']
-            self.extra_power_reward_factor = config['management']['extra_power_reward_factor']
-            self.maximum_extra_power_reward = config['management']['maximum_extra_power_reward']
-        else:
-            self.reach_reward = 20
-            self.not_reach_penalty = -50
-            self.extra_power_reward_factor = 0.1
-            self.maximum_extra_power_reward = 0
+            try:
+                self.reach_reward = config['management']['reach_reward']
+                self.not_reach_penalty = config['management']['not_reach_penalty']
+                self.extra_power_reward_factor = config['management']['extra_power_reward_factor']
+                self.maximum_extra_power_reward = config['management']['maximum_extra_power_reward']
+            except KeyError:
+                self.reach_reward = 20
+                self.not_reach_penalty = -50
+                self.extra_power_reward_factor = 0.1
+                self.maximum_extra_power_reward = 0
 
     def set_demand(self, result_df):
         """
