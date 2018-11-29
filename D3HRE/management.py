@@ -189,7 +189,7 @@ class Finite_horizon_optimal_management:
 
 class Dynamic_environment:
 
-    def __init__(self, battery, resource, management, config={}):
+    def __init__(self, battery, resource, management, config=None):
         self.battery = battery
         self.resource = resource
         self._normalize_resource()
@@ -200,7 +200,6 @@ class Dynamic_environment:
         self.total_reward = 0
         self.planning = []
         self.set_reward_weight(config=config)
-        self.gloden_ratio = (np.sqrt(5) - 1) / 2
         self.reward_history = []
 
     def _normalize_resource(self):
@@ -223,9 +222,14 @@ class Dynamic_environment:
                 self.maximum_extra_power_reward = config['management']['maximum_extra_power_reward']
             except KeyError:
                 self.reach_reward = 20
-                self.not_reach_penalty = -50
+                self.not_reach_penalty = -500
                 self.extra_power_reward_factor = 0.1
                 self.maximum_extra_power_reward = 0
+        else:
+            self.reach_reward = 20
+            self.not_reach_penalty = -500
+            self.extra_power_reward_factor = 0.1
+            self.maximum_extra_power_reward = 0
 
     def set_demand(self, result_df):
         """
@@ -328,15 +332,15 @@ class Dynamic_environment:
     def gym_step(self, norm_supply):
 
         #  ↓ ↓ ↓ ↓ ↓ ↓ Normalized variables ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
-        plan = self.min_max_scaler.inverse_transform([norm_supply])
+        plan_usage = self.min_max_scaler.inverse_transform([norm_supply])
         #  ↑ ↑ ↑ ↑ ↑ ↑ Normalized variables ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑
 
         #  ↓ ↓ ↓ ↓ ↓ ↓ Raw        variables ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
         generated = self.resource[self.time_step]
-        supply = self.battery.step(plan, generated, gym=True)
+        supply = self.battery.step(plan_usage, generated, gym=True)
         status = self.battery.status[-1]
         reward = self.reward(supply)
-        self.planning.append(plan[0][0])
+        self.planning.append(plan_usage[0][0])
         #  ↑ ↑ ↑ ↑ ↑ ↑ Raw        variables ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑ ↑
 
         #  ↓ ↓ ↓ ↓ ↓ ↓ Normalized variables ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓ ↓
