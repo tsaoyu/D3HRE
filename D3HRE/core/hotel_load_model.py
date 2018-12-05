@@ -35,13 +35,15 @@ class HotelLoad:
 
         if len(power_consumption['power']) == 1:
             power = power_consumption['power'][0] * performance_level
+            return power
         elif len(power_consumption['power']) == 2:
             power = (
                 power_consumption['power'][1] - power_consumption['power'][0]
             ) * performance_level + power_consumption['power'][0]
+            return power
         else:
             print('Power list could only be range based or fixed. ')
-        return power
+
 
     def generate_power_consumption(self):
 
