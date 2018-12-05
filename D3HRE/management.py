@@ -94,7 +94,7 @@ class EWMA_management:
         self.type = 'reactive'
         self.time_step = 0
         self.resource_series = pd.Series()
-        self.scaling = 0.95
+        self.scaling = 0.6
 
 
     def update(self, observation, resources):
@@ -224,12 +224,12 @@ class Dynamic_environment:
                 self.reach_reward = 20
                 self.not_reach_penalty = -500
                 self.extra_power_reward_factor = 0.1
-                self.maximum_extra_power_reward = 0
+                self.maximum_extra_power_reward = 10
         else:
             self.reach_reward = 20
             self.not_reach_penalty = -500
             self.extra_power_reward_factor = 0.1
-            self.maximum_extra_power_reward = 0
+            self.maximum_extra_power_reward = 10
 
     def set_demand(self, result_df):
         """
@@ -387,7 +387,7 @@ class Dynamic_environment:
                 _, reward, _, _ = self.step(supply, power)
                 self.total_reward += reward
         else:
-            print('I don\'t know how to handle this type of management!')
+            print('I don\'t know how to handle this type of management strategy!')
 
     def simulation_result(self, name=None):
         battery_history = self.battery.history()

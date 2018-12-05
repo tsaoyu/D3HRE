@@ -29,58 +29,53 @@ class HotelLoad:
         self.power_consumption_list = power_consumption_list
         self.components = list(self.power_consumption_list.keys())
 
-    def component_power_consumption(self, component, performance_level=1):
+    def component_power_consumption(self, component, performance_level):
 
         power_consumption = self.power_consumption_list[component]
 
-        if power_consumption['duty_cycle'] != 1:
+        if len(power_consumption['power']) == 1:
+            power = power_consumption['power'][0] * performance_level
+        elif len(power_consumption['power']) == 2:
             power = (
                 power_consumption['power'][1] - power_consumption['power'][0]
             ) * performance_level + power_consumption['power'][0]
         else:
-
-            power = power_consumption['power'][0]
+            print('Power list could only be range based or fixed. ')
         return power
 
     def generate_power_consumption(self):
 
-        system_power_consumption = 0
+        non_critical_hotel_load = 0
         critical_hotel_load_consumption = 0
 
 
         if self.strategy == 'full-power':
             performance = 1
             for component in self.components:
-                system_power_consumption += self.component_power_consumption(
+                critical_hotel_load_consumption += self.component_power_consumption(
                     component, performance
                 )
 
         elif self.strategy == 'normal':
 
             for component in self.components:
-                if self.power_consumption_list[component]['duty_cycle'] != 1:
-                    duty_cycle = self.power_consumption_list[component]['duty_cycle']
-                    performance = duty_cycle + np.random.randn() * 0.1
+                if self.power_consumption_list[component]['duty_cycle'] == 1:
+                    critical_hotel_load_consumption += self.component_power_consumption(component, 1)
                 else:
-                    performance = 1
-                    critical_hotel_load_consumption += self.component_power_consumption(component,
-                                                                            performance)
-                system_power_consumption += self.component_power_consumption(
-                    component, performance
-                )
+                    duty_cycle = self.power_consumption_list[component]['duty_cycle']
+                    performance = np.clip(duty_cycle + np.random.randn() * 0.1, 0, 1)
+                    non_critical_hotel_load += self.component_power_consumption(component, performance)
 
         else:
             print('This is not supported yet!')
 
-        return system_power_consumption, critical_hotel_load_consumption
+        return non_critical_hotel_load + critical_hotel_load_consumption, critical_hotel_load_consumption
 
     def generate_power_consumption_timeseries(self):
         duration = len(self.mission.df.index)
-        generated_power_consumption_list = np.array([
-            self.generate_power_consumption() for t in range(int(duration))
-        ])
-        power_consumption_list = generated_power_consumption_list.T[0]
-        critical_hotel_load_list = generated_power_consumption_list.T[1]
+        power_consumption_list, critical_hotel_load_list = np.array([
+            self.generate_power_consumption() for _ in range(int(duration))
+        ]).T
         hotel_load_ts = pd.Series(
             data=power_consumption_list, index=self.mission.df.index
         )
@@ -100,10 +95,10 @@ if __name__ == '__main__':
 
     power_consumption_list = {
         'single_board_computer': {'power': [2, 10], 'duty_cycle': 0.5},
-        'webcam': {'power': [0.6], 'duty_cycle': 1},
+        'webcam': {'power': [0.4, 0.6], 'duty_cycle': 1},
         'gps': {'power': [0.04, 0.4], 'duty_cycle': 0.9},
         'imu': {'power': [0.67, 1.1], 'duty_cycle': 0.9},
-        'sonar': {'power': [0.5, 50, 0.2], 'duty_cycle': 0.5},
+        'sonar': {'power': [0.5, 50], 'duty_cycle': 0.5},
         'ph_sensor': {'power': [0.08, 0.1], 'duty_cycle': 0.95},
         'temp_sensor': {'power': [0.04], 'duty_cycle': 1},
         'wind_sensor': {'power': [0.67, 1.1], 'duty_cycle': 0.5},

@@ -155,12 +155,15 @@ class Reactive_simulation(Task):
             self.wind_power_simulation * wind_area
             + self.solar_power_simulation * solar_area
         )
-        supply, load = power_supply.tolist(), self.Task.load_demand.tolist()
+
         if self.config != {}:
             battery = Battery(battery_capacity, config=self.config)
+            safe_factor = self.config['optimization']['safe_factor']
         else:
             battery = Battery(battery_capacity)
+            safe_factor = 1
 
+        supply, load = power_supply.tolist(), (self.Task.load_demand*(1+safe_factor)).tolist()
         battery.run(supply, load)
         lpsp = battery.lost_power_supply_probability()
         return lpsp
