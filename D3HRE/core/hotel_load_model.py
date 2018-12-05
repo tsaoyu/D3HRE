@@ -42,7 +42,7 @@ class HotelLoad:
             ) * performance_level + power_consumption['power'][0]
             return power
         else:
-            print('Power list could only be range based or fixed. ')
+            print('Power list could only be range based or fixed. {} was given'.format(power_consumption['power']))
 
 
     def generate_power_consumption(self):
