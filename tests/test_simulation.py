@@ -17,7 +17,7 @@ power_consumption_list = {'single_board_computer': {'power': [2, 10], 'duty_cycl
                               'webcam': {'power': [0.6], 'duty_cycle': 1},
                               'gps': {'power': [0.04, 0.4], 'duty_cycle': 0.9},
                               'imu': {'power': [0.67, 1.1], 'duty_cycle': 0.9},
-                              'sonar': {'power': [0.5, 50, 0.2], 'duty_cycle': 0.5},
+                              'sonar': {'power': [0.5, 50], 'duty_cycle': 0.5},
                               'ph_sensor': {'power': [0.08, 0.1], 'duty_cycle': 0.95},
                               'temp_sensor': {'power': [0.04], 'duty_cycle': 1},
                               'wind_sensor': {'power': [0.67, 1.1], 'duty_cycle': 0.5},
