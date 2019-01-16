@@ -87,6 +87,76 @@ class Task:
         return self.load_demand
 
 
+class Power_simulation():
+    def __init__(self, Mission, config={}):
+        self.mission = Mission
+        self.config = config
+        self.resource_df = resource_df_download_and_process(self.mission)
+        self.set_parameter()
+
+    def set_parameter(self):
+        try:
+            self.power_coefficient = self.config['transducer']['wind']['power_coef']
+            self.cut_in_speed = self.config['transducer']['wind']['v_in']
+            self.rated_speed = self.config['transducer']['wind']['v_rate']
+
+            self.tilt = self.config['transducer']['solar']['tilt']
+            self.azim = self.config['transducer']['solar']['azim']
+            self.tracking = self.config['transducer']['solar']['azim']
+            self.capacity = self.config['transducer']['solar']['power_density']
+
+        except KeyError:
+
+            self.power_coefficient = 0.3
+            self.cut_in_speed = 2
+            self.rated_speed = 15
+
+            self.tilt = 0
+            self.azim = 180
+            self.tracking = 0
+            self.capacity = 140
+
+    @property
+    @lru_cache(maxsize=32)
+    def wind_power_simulation(self):
+        wind_df = pd.DataFrame()
+        print("Start wind energy power simulation...")
+        wind_df['wind_raw'] = self.resource_df.V2.apply(
+            lambda x: power_from_turbine(
+                x, 1, self.power_coefficient, self.cut_in_speed, self.rated_speed
+            )
+        )
+        wind_df['wind_correction'] = resistance_power(self.resource_df, 1)
+        wind_df['wind_power'] = wind_df['wind_raw'] - wind_df['wind_correction']
+        self.wind = wind_df
+        return wind_df['wind_power']
+
+    @property
+    @lru_cache(maxsize=32)
+    def solar_power_simulation(self):
+        self.solar = pd.DataFrame()
+        print("Start solar energy power simulation...")
+        self.resource_df['global_horizontal'] = self.resource_df.SWGDN
+        self.resource_df['diffuse_fraction'] = brl_model.location_run(self.resource_df)
+        self.resource_df['solar_power'] = pv.run_plant_model_location(
+            self.resource_df,
+            self.tilt,
+            self.azim,
+            self.tracking,
+            self.capacity,
+            config=self.config
+        )
+        self.solar['solar_power'] = self.resource_df['solar_power']
+        return self.solar['solar_power']
+
+    def run(self, wind_power_area, solar_power_area):
+        wind_power_df = self.wind_power_simulation * wind_power_area
+        solar_power_df = self.solar_power_simulation * solar_power_area
+        self.simulation_result = pd.concat([wind_power_df, solar_power_df], axis=1)
+        return self.simulation_result
+
+
+
 class Reactive_simulation(Task):
     def __init__(self, Task, config={}):
         self.Task = Task
