@@ -311,6 +311,10 @@ class Battery_managed:
     def story_board(self):
         return self.status
 
+    def lost_power_supply_probability(self):
+        LPSP = 1 - self.unmet_history.count(0) / len(self.SOC)
+        return LPSP
+
     def copy(self):
         return Battery_managed(self.capacity, self.config)
 
