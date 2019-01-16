@@ -1,13 +1,12 @@
 import numpy as np
 import pandas as pd
 import pygmo as pg
+import cloudpickle
 
-
-from PyResis import propulsion_power
 
 from D3HRE import simulation
-from D3HRE.core.battery_models import soc_model_fixed_load
-from D3HRE.core.mission_utility import Mission
+from D3HRE.core.battery_models import soc_model_fixed_load, Battery_managed
+
 
 
 def objective_warpper(As, Aw, B, demand, route, start_time, speed, kwargs):
@@ -462,6 +461,16 @@ class Constraint_mixed_objective_optimisation(Mixed_objective_optimization_funct
     def get_resource_df(self):
         return self.rea_sim.resource_df
 
+    def save_result(self, name='optimisation_result.pkl'):
+        solar_area, wind_area, battery_capacity = self.champion
+        system = Battery_managed(battery_capacity, config=self.config)
+        result_df = self.get_report()
+
+        system.configuration = self.champion
+        resource = result_df.wind_power + result_df.solar_power
+        with open(name, 'wb') as f:
+            cloudpickle.dump([system, result_df, resource], f)
+
 
 
 
@@ -569,6 +578,8 @@ class Simulation_based_optimization:
         power = self.power_df(self)
         resource = self.resource_df(self)
         pass
+
+
 
 
 if __name__ == '__main__':

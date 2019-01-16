@@ -190,6 +190,13 @@ class Finite_horizon_optimal_management:
 class Dynamic_environment:
 
     def __init__(self, battery, resource, management, config=None):
+        """
+
+        :param battery: object from battery models
+        :param resource: pandas Series total renewable power generation from resources
+        :param management: object one power management strategy
+        :param config: configuration yaml file
+        """
         self.battery = battery
         self.resource = resource
         self._normalize_resource()
@@ -224,12 +231,12 @@ class Dynamic_environment:
                 self.reach_reward = 20
                 self.not_reach_penalty = -500
                 self.extra_power_reward_factor = 0.1
-                self.maximum_extra_power_reward = 10
+                self.maximum_extra_power_reward = 20
         else:
             self.reach_reward = 20
             self.not_reach_penalty = -500
             self.extra_power_reward_factor = 0.1
-            self.maximum_extra_power_reward = 10
+            self.maximum_extra_power_reward = 20
 
     def set_demand(self, result_df):
         """
