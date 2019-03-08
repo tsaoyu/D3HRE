@@ -1,7 +1,6 @@
 import glob
-import os.path
+import os
 import configparser
-import getpass
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -15,19 +14,29 @@ config = configparser.ConfigParser()
 config_file_path = os.path.expanduser('~/.d3hre')
 config.read(config_file_path)
 
-xr.set_options(file_cache_maxsize=300)
+NUMBER_OF_CONNECTIONS = int(config['MERRA2']['Connections'])
+MERRA2_DATA_DIR = config['MERRA2']['Datadir']
+OSCAR_DATA_DIR = config['OSCAR']['Datadir']
+
 
 try:
     USERNAME = config['MERRA2']['Username']
     PASSWORD = config['MERRA2']['Password']
 except KeyError:
-    USERNAME = input('MERRA-2 Username:')
-    PASSWORD = getpass.getpass('MERRA-2 Password:')
+    try:
+        USERNAME = str(os.environ['MERRA2_USER'])
+        PASSWORD = str(os.environ['MERRA2_PWD'])
+    except KeyError:
+        import getpass
+        USERNAME = input('MERRA-2 Username:')
+        PASSWORD = getpass.getpass('MERRA-2 Password:')
 
-NUMBER_OF_CONNECTIONS = int(config['MERRA2']['Connections'])
-MERRA2_DATA_DIR = config['MERRA2']['Datadir']
+# Find MERRA-2 database account and password from three possible locations:
+# 1. From .d3hre configuration file
+# 2. From environment variables
+# 3. From user input
 
-OSCAR_DATA_DIR = config['OSCAR']['Datadir']
+
 
 
 def generate_single_download_link(start, end, lat_lon, data_set=None):
@@ -206,13 +215,13 @@ def resource_df_download(
     folder = os.path.expanduser(data_dir + ID)
     file_name = folder + 'resource.pkl'
 
-    # Check if compact pandas data frame have already processed
-    # if so, load the file and skip file download and processing
+    # Check if compact pandas data frame file have already been prepared
+    # if so, load the file and skip file download and processing.
+
     if os.path.isfile(file_name):
         resource_df = pd.read_pickle(file_name)
-
     else:
-        # Download when necessary
+        # If there is no resource file start teh download
         download_manager = DownloadManager()
         download_manager.set_username_and_password(username, password)
         download_manager.download_path = folder + '/download_wind'
@@ -239,7 +248,7 @@ def resource_df_download(
             if corrupted_files == 0:
                 print("Wind data file completeness check pass")
             else:
-                print("Some wind data corrupted, redownload start")
+                print("Some wind data corrupted, redownload start...")
                 download_manager.download_path = folder + '/download_wind'
                 URLS = download_URL(mission_df, data_set='wind')
                 url = []
@@ -258,7 +267,7 @@ def resource_df_download(
             if corrupted_files == 0:
                 print("Solar data file completeness check pass")
             else:
-                print("Some solar data corrupted, redownload start")
+                print("Some solar data corrupted, redownloading start...")
                 download_manager.download_path = folder + '/download_solar'
                 URLS = download_URL(mission_df, data_set='solar')
                 url = []
@@ -274,7 +283,6 @@ def resource_df_download(
             resource_df['utc'] = mission_df.index[1:]
 
             resource_df.set_index('utc', inplace=True)
-
             resource_df.to_pickle(file_name)
 
         resource_df = pd.read_pickle(file_name)
