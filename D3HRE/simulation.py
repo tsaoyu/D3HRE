@@ -6,7 +6,7 @@ from functools import lru_cache
 from gsee.gsee import brl_model, pv
 from D3HRE.core.dataframe_utility import full_day_cut
 from D3HRE.core.hotel_load_model import HotelLoad
-from D3HRE.core.battery_models import min_max_model, Soc_model_variable_load, Battery, Battery_managed
+from D3HRE.core.battery_models import min_max_model, Battery
 from D3HRE.core.weather_data_download import resource_df_download_and_process
 from D3HRE.core.wind_turbine_model import power_from_turbine, resistance_power
 from D3HRE.core.mission_utility import Mission
@@ -21,8 +21,7 @@ class Task:
     def __init__(self, mission, vehicle, power_consumption_list):
         """
 
-        :param mission: object should have df attribute that return the mission
-        DataFrame
+        :param mission: object should have df attribute that contains information on
         :param vehicle: object should have prop_power() method that return
         propulsion power of the vehicle
         :param power_consumption_list: dictionary consist of components with power
@@ -31,7 +30,6 @@ class Task:
         self.mission = mission
         self.vehicle = vehicle
         self.power_consumption_list = power_consumption_list
-
         self.get_load_demand()
 
     def get_ocean_current(self):
