@@ -5,12 +5,12 @@ from functools import lru_cache
 
 from gsee.gsee import brl_model, pv
 from D3HRE.core.dataframe_utility import full_day_cut
-from D3HRE.core.hotel_load_model import HotelLoad
+
 from D3HRE.core.battery_models import min_max_model, Battery
 from D3HRE.core.weather_data_download import resource_df_download_and_process
 from D3HRE.core.wind_turbine_model import power_from_turbine, resistance_power
 from D3HRE.core.mission_utility import Mission
-from D3HRE.core.navigation_utility import ocean_current_processing
+from D3HRE import MaritimeRobot
 
 
 class Task:
@@ -18,7 +18,7 @@ class Task:
     Task is a high level object consist of mission object, vehicle object and
     power consumption list.
     """
-    def __init__(self, mission, vehicle, power_consumption_list):
+    def __init__(self, mission, robot, power_consumption_list={}):
         """
 
         :param mission: object should have df attribute that contains information on
@@ -28,61 +28,27 @@ class Task:
         requirements and duty cycle
         """
         self.mission = mission
-        self.vehicle = vehicle
-        self.power_consumption_list = power_consumption_list
-        self.get_load_demand()
-
-    def get_ocean_current(self):
-        """
-        Get ocean current for maritime vehicles.
-        :return: None
-        """
-        self.ocean_current_df = ocean_current_processing(self.mission.df)
-        pass
-
-    def get_hotel_load(self, strategy='normal'):
-        """
-        Get hotel load of the vehicles.
-        :param strategy: str optinal 'full-power' for continuous power output
-        'normal' for duty cycle controlled power consumption generation
-        :return: hotel_load dataFrame
-        """
-        hotel = HotelLoad(self.mission, self.power_consumption_list, strategy)
-        self.hotel_load, self.critical_hotel_load = hotel.generate_power_consumption_timeseries()
-        return self.hotel_load
-
-    def get_propulsion_load(self, current=True):
-        """
-
-        :param current: bool default True, use ocean current for the vehicle
-        :return: prop_load dataFrame
-        """
-        if current == False:
-            self.prop_load = self.vehicle.prop_power()
+        self.robot = robot
+        if power_consumption_list != {}:
+            self.power_consumption_list = power_consumption_list
+            self.estimate_demand_load_compatible()
         else:
-            try:
-                self.get_ocean_current()
-            except FileNotFoundError:
-                print('No ocean current file found!')
-                self.prop_load = self.vehicle.prop_power()
-                return self.prop_load
-            if self.ocean_current_df.Vs.isnull().values.any():
-                print('No current data from database, fallback on no current')
-                self.prop_load = self.vehicle.prop_power()
-            else:
-                prop_power_list = []
-                for v in self.ocean_current_df.Vs:
-                    self.vehicle.speed = v
-                    prop_power_list.append(self.vehicle.prop_power())
+            self.estimate_demand_load()
 
-                self.prop_load = pd.Series(
-                    index=self.mission.df.index, data=prop_power_list
-                )
-        return self.prop_load
+    def estimate_demand_load_compatible(self):
+        new_robot = MaritimeRobot(self.power_consumption_list)
+        new_robot.set_from_PyResis(self.robot)
+        self.robot = new_robot
+        self.estimate_demand_load()
 
-    def get_load_demand(self):
-        self.load_demand = self.get_hotel_load() + self.get_propulsion_load()
-        return self.load_demand
+    def estimate_demand_load(self):
+        self.robot.estimate_demand_load(self.mission)
+        self.hotel_load = self.robot.hotel_load
+        self.prop_load = self.robot.prop_load
+        self.critical_hotel_load = self.robot.critical_hotel_load
+        self.critical_prop_load = self.robot.critical_prop_load
+
+        self.load_demand = self.hotel_load + self.prop_load
 
 
 class Power_simulation():
