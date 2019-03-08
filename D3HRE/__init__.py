@@ -121,6 +121,7 @@ class Task:
 
         self.load_demand = self.hotel_load + self.prop_load
 
+
 class Mission:
 
     def __init__(self):

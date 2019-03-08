@@ -242,6 +242,5 @@ class Constraint_multiple_objective_optimisation(Multiple_objective_optimization
 
 
 
-
 if __name__ == '__main__':
     pass
