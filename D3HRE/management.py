@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import preprocessing
-
+import visilibity as vis
 
 def construct_environment_demo(power_dataframe, battery_capacity):
     aggregated_power = power_dataframe.cumsum().Power
@@ -427,7 +427,7 @@ class Finite_optimal_management:
         :param epsilon: float precision of the management
         :param config: dict configuration file
         """
-        import visilibity as vis
+
         self.power_series = power_series
         self.config = config
         self.time = len(self.power_series)
