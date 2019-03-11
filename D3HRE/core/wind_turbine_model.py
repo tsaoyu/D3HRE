@@ -10,7 +10,7 @@ def power_from_turbine(wind_speed, area, power_coefficient, cut_in_speed, rated_
     before wind speed reach cut-off speed. Wind turbine is assumed to be working under controller
     speed mode that turbine blade rotate as same as rated speed. When speed is higher than
     rated speed, wind turbine will stop operating. Maximum power coefficient tracking is assumed
-    in the idealised turbine model.
+    in this idealised turbine model.
 
     :param wind_speed: float m/s wind speed at turbine height
     :param area: float m^2 swept area of wind turbine
@@ -25,9 +25,9 @@ def power_from_turbine(wind_speed, area, power_coefficient, cut_in_speed, rated_
     v = wind_speed
     if v < cut_in_speed:
         power = 0
-    elif cut_in_speed < v < rated_speed:
+    elif cut_in_speed < v <= rated_speed:
         power = 1 / 2 * Cp * A * v ** 3
-    elif rated_speed < v < 3 * rated_speed:
+    elif rated_speed < v <= 3 * rated_speed:
         power = 1 / 2 * Cp * A * rated_speed ** 3
     elif v > 3 * rated_speed:
         power = 0
