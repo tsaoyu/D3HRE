@@ -18,7 +18,6 @@ test_mission = Mission('2014-01-01', test_route, 2)
 test_ship = propulsion_power.Ship()
 test_ship.dimension(5.72, 0.248, 0.76, 1.2, 5.72/(0.549)**(1/3),0.613)
 
-sbo = Simulation_based_optimization(test_route, '2014-01-01',2 ,40, ship=test_ship)
 
 power_consumption_list = {'single_board_computer': {'power': [2, 10], 'duty_cycle': 0.5},
                               'webcam': {'power': [0.6], 'duty_cycle': 1},
