@@ -2,3 +2,6 @@ salib
 cartopy
 jupyter
 
+pytest
+pytest-cov
+codecov

@@ -16,9 +16,6 @@ gpxpy
 pygmo==2.6
 nvector
 
-pytest
-pytest-cov
-codecov
 cloudpickle
 ruamel.yaml
 requests
