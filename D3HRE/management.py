@@ -1,11 +1,9 @@
-import visilibity as vis
 import logging
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
 from sklearn import preprocessing
+
 
 def construct_environment_demo(power_dataframe, battery_capacity):
     aggregated_power = power_dataframe.cumsum().Power
@@ -190,6 +188,7 @@ class Dynamic_environment:
 
     def __init__(self, battery, resource, management, config=None):
         """
+        The dynamic power management environment.
 
         :param battery: object from battery models
         :param resource: pandas Series total renewable power generation from resources
@@ -213,7 +212,7 @@ class Dynamic_environment:
         self.normalized_resource = self.min_max_scaler.fit_transform(self.resource.values.reshape(-1, 1))
 
     def _battety_transform(self, energy):
-        normalized_battery = (energy/self.battery.capacity) * 2 -1
+        normalized_battery = (energy/self.battery.capacity) * 2 - 1
         return normalized_battery
 
     def get_scaler(self):
@@ -410,6 +409,7 @@ class Dynamic_environment:
 
 
 class Finite_optimal_management:
+
     def __init__(
         self,
         power_series,
@@ -427,6 +427,7 @@ class Finite_optimal_management:
         :param epsilon: float precision of the management
         :param config: dict configuration file
         """
+        import visilibity as vis
         self.power_series = power_series
         self.config = config
         self.time = len(self.power_series)
