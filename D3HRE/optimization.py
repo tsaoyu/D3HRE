@@ -14,9 +14,9 @@ class Mixed_objective_optimization_function:
         self.set_constraint()
 
         if config != {}:
-            self.reactive_sim = simulation.Reactive_simulation(Task, config=config)
+            self.sim = simulation.PowerSim(Task, config=config)
         else:
-            self.reactive_sim = simulation.Reactive_simulation(Task)
+            self.sim = simulation.PowerSim(Task)
 
     def set_parameters(self):
         try:
@@ -55,7 +55,7 @@ class Mixed_objective_optimization_function:
             x[0] * weight[0]
             + x[1] * weight[1]
             + x[2] * weight[2]
-            + weight[3] * self.reactive_sim.run(x[0], x[1], x[2])
+            + weight[3] * self.sim.run(x[0], x[1], x[2])
         )
         return [obj]
 
@@ -84,7 +84,7 @@ class Constraint_mixed_objective_optimisation(Mixed_objective_optimization_funct
         problem using the mixed objective optimisation function. When all the parameters are set,
         call run() method to run the optimisation.
 
-        :param Task: task object (mission + vehicle )
+        :param Task: task object (mission + robot )
         :param config: configuration file if exist will be pass to mixed objective function
         """
         self.config = config
@@ -127,7 +127,7 @@ class Constraint_mixed_objective_optimisation(Mixed_objective_optimization_funct
                 self.pop_history.append(pop)
             self.log = algo.extract(type(uda)).get_log()
             self.pop = pop
-        elif converge_info == True :
+        elif converge_info == True:
             uda = pg.pso(gen=self.generation)
             algo = pg.algorithm(uda)
             algo.set_verbosity(1)
@@ -154,7 +154,7 @@ class Constraint_mixed_objective_optimisation(Mixed_objective_optimization_funct
 
     def get_lpsp(self):
         solar_area_opt, wind_area_opt, battery_capacity = self.champion
-        return self.rea_sim.run(solar_area_opt, wind_area_opt, battery_capacity)
+        return self.sim.run(solar_area_opt, wind_area_opt, battery_capacity)
 
     def get_report(self):
         """
@@ -162,10 +162,10 @@ class Constraint_mixed_objective_optimisation(Mixed_objective_optimization_funct
         :return: DataFrame on the
         """
         solar_area_opt, wind_area_opt, battery_capacity = self.champion
-        return self.rea_sim.result(solar_area_opt, wind_area_opt, battery_capacity)
+        return self.sim.history(solar_area_opt, wind_area_opt, battery_capacity)
 
     def get_resource_df(self):
-        return self.rea_sim.resource_df
+        return self.sim.resource_df
 
     def save_result(self, name='optimisation_result.pkl'):
         """
