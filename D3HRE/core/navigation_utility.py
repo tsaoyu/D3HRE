@@ -13,22 +13,6 @@ OSCAR_DIR = config['OSCAR']['Datadir']
 
 
 def calculate_initial_compass_bearing(pointA, pointB):
-    """
-    Calculates the bearing between two points.
-    The formulae used is the following:
-        θ = atan2(sin(Δlong).cos(lat2),
-                  cos(lat1).sin(lat2) − sin(lat1).cos(lat2).cos(Δlong))
-
-    :Parameters:
-      - `pointA: The tuple representing the latitude/longitude for the
-        first point. Latitude and longitude must be in decimal degrees
-      - `pointB: The tuple representing the latitude/longitude for the
-        second point. Latitude and longitude must be in decimal degrees
-    :Returns:
-      The bearing in degrees
-    :Returns Type:
-      float
-    """
     if (type(pointA) != tuple) or (type(pointB) != tuple):
         raise TypeError("Only tuples are supported as arguments")
     lat1 = math.radians(pointA[0])
@@ -48,39 +32,9 @@ def calculate_initial_compass_bearing(pointA, pointB):
     return compass_bearing
 
 
-def get_current(df):
-    start_year = df.index[0].year
-    end_year = df.index[-1].year
+def ocean_current_processing(mission_df, file_dir=OSCAR_DIR):
 
-    if start_year != end_year:
-        print('Only inter year have been implemented!')
-        pass
-
-    dataset = xr.open_dataset('/home/tony/Downloads/oscar_vel{}.nc'.format(start_year))
-    time_index, lat_index, lon_index = (
-        df.index,
-        df.lat.tolist(),
-        (df.lon + 200).tolist(),
-    )
-    u_speed_list = []
-    v_speed_list = []
-    for time, lat, lon in zip(time_index, lat_index, lon_index):
-        selected_data = dataset.sel(
-            time=time, latitude=lat, longitude=lon, depth=15, method='nearest'
-        )
-        u_speed = selected_data.u.values.tolist()
-        u_speed_list.append(u_speed)
-        v_speed = selected_data.v.values.tolist()
-        v_speed_list.append(v_speed)
-    df['current_u'] = u_speed_list
-    df['current_v'] = v_speed_list
-    return df
-
-
-def ocean_current_processing(df, file_dir=OSCAR_DIR):
-
-    dataframe = df.copy()
-
+    dataframe = mission_df.copy()
     location_list = [tuple(x) for x in dataframe[['lat', 'lon']].values]
 
     # Calculate heading with initial compass bearing
@@ -93,7 +47,7 @@ def ocean_current_processing(df, file_dir=OSCAR_DIR):
 
     dataframe['heading'] = heading
 
-    V_g = dataframe['speed'] / 3.6  # ship ground speed in DataFrame unit of km/h
+    V_g = dataframe['speed'] / 3.6  # ship ground speed in mission DataFrame unit of km/h
 
     u_g = V_g * np.sin(np.radians(dataframe['heading']))
     v_g = V_g * np.cos(np.radians(dataframe['heading']))
@@ -115,8 +69,8 @@ def ocean_current_processing(df, file_dir=OSCAR_DIR):
                 time=time, latitude=lat, longitude=lon, depth=15, method='nearest'
             )
             u_speed = selected_data.u.values.tolist()
-            u_speed_list.append(u_speed)
             v_speed = selected_data.v.values.tolist()
+            u_speed_list.append(u_speed)
             v_speed_list.append(v_speed)
 
         return u_speed_list, v_speed_list
@@ -132,8 +86,8 @@ def ocean_current_processing(df, file_dir=OSCAR_DIR):
             u_speed_one_year, v_speed_one_year = read_and_match_one_year_current(
                 year, dataframe, file_dir
             )
-            u_speed_list = u_speed_list + u_speed_one_year
-            v_speed_list = v_speed_list + v_speed_one_year
+            u_speed_list += u_speed_one_year
+            v_speed_list += v_speed_one_year
 
     else:
         u_speed_list, v_speed_list = read_and_match_one_year_current(
@@ -143,15 +97,8 @@ def ocean_current_processing(df, file_dir=OSCAR_DIR):
     dataframe['current_u'] = u_speed_list
     dataframe['current_v'] = v_speed_list
 
-    if dataframe.isnull().values.any():
-        number_of_missing = dataframe.current_u.isnull().sum().sum()
-        dataframe['current_u'].bfill(inplace=True)
-        dataframe['current_v'].bfill(inplace=True)
-
-    if dataframe.isnull().values.any():
-        number_of_missing = dataframe.current_u.isnull().sum()
-        dataframe['current_u'].ffill(inplace=True)
-        dataframe['current_v'].ffill(inplace=True)
+    dataframe['current_u'].fillna(dataframe['current_u'].mean(), inplace=True)
+    dataframe['current_v'].fillna(dataframe['current_v'].mean(), inplace=True)
 
     u_s = u_g - dataframe['current_u']
     v_s = v_g - dataframe['current_v']
