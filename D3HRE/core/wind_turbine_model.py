@@ -35,24 +35,20 @@ def power_from_turbine(wind_speed, area, power_coefficient, cut_in_speed, rated_
     return power
 
 
-def resistance_power(dataframe, area):
+def resistance_power(resource_df, area):
     """
     Wind turbine resistance power estimation. When wind blows into wind turbine, it not only
     generate circular moment that can drive electrical power but also axial force. This function
     calculate power consumption due to additional resistance power for wind turbine on platforms.
 
 
-    :param dataframe: pandas dataframe contains following fields: V2(wind speed at two metres height)
+    :param resource_df: pandas dataframe contains following fields: V2(wind speed at two metres height)
         apparent_wind_direction (apparent wind direction ), speed(speed of platform)
     :param area: m^2 area of wind turbine
     :return: Watts power correction positive for propulsion power contribution
         negative for propulsion power increase due to resistance
     """
     A = area
-    power_correction = (1 / 2 * A * 0.6
-        * dataframe.Va ** 2
-        * dataframe.relative_wind_cos
-        * dataframe.speed
-    )
+    power_correction = 1 / 2 * A * 0.6 * resource_df.Va ** 2 * resource_df.relative_wind_cos * resource_df.speed
     power_correction[power_correction <0] = 0
     return power_correction
