@@ -25,27 +25,5 @@ power_consumption_list = {'single_board_computer': {'power': [2, 10], 'duty_cycl
 test_mission = Mission('2014-01-01', test_route, 2)
 test_task = Task(test_mission, test_ship, power_consumption_list)
 
-test_task.get_hotel_load()
-test_task.get_load_demand()
-# h_normal = HotelLoad(test_mission, power_consumption_list)
-# h_full =  HotelLoad(test_mission, power_consumption_list, 'full-power')
-#
-#
-# test_mission = Mission('2014-01-01', test_route, 2, test_ship, power_consumption_list)
-#
-#
-#
-# def test_hotel_load():
-#     ts_normal = h_normal.generate_power_consumption_timeseries()
-#     ts_full =h_full.generate_power_consumption_timeseries()
-#
-#     assert len(ts_normal) == len(test_mission.df)
-#     assert len(ts_full) == len(test_mission.df)
-#
-# def mission_load():
-#     assert test_mission.get_load_demand() == 0 # get_load_demand return 0 because hotel load is missing
-#     assert test_mission.get_hotel_load(power_consumption_list) == h_normal
-#     assert test_mission.get_hotel_load(power_consumption_list, 'full-power') == h_full
-#     assert test_mission.get_load_demand() == 0 #  still full load demand isn't avaliable yet
-#     test_mission.get_propulsion_load(test_ship)
-#     assert test_mission.get_load_demand() == h_normal + test_ship.prop_power()
+test_task.estimate_demand_load()
+
