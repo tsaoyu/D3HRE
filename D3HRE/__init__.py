@@ -9,8 +9,8 @@ class Robot():
     def __init__(self):
         pass
 
-    def dummy_robot(self):
-        print("I am a dummy robot that don't know what to do.")
+    def __repr__(self):
+        return "I am a dummy robot that don't know what to do."
 
     def prop_load(self):
         pass
@@ -23,10 +23,10 @@ class Robot():
 
 class MaritimeRobot(Robot):
 
-
-    def __init__(self, power_consumption_list):
-
+    def __init__(self, power_consumption_list, from_pyresis=None):
         self.power_consumption_list = power_consumption_list
+        if from_pyresis is not None:
+            self.set_from_PyResis(from_pyresis)
 
     def __repr__(self):
         return "I am a maritime robot. "
@@ -36,7 +36,6 @@ class MaritimeRobot(Robot):
         self.surface_area = vehicle.maximum_deck_area()
         self.beam = vehicle.beam
         self.displacement = vehicle.displacement
-
 
     def estimate_demand_load(self, mission):
         self.mission = mission
