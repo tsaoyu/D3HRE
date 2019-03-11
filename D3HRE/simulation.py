@@ -286,7 +286,7 @@ class PowerSim():
         if self.config != {}:
             battery = Battery(battery_capacity, config=self.config)
             safe_factor = self.config['optimization']['safe_factor']
-            coupling_ratio = self.config['simulation']['coupling_ratio']
+            coupling_ratio = self.config['simulation']['coupling']
         else:
             battery = Battery(battery_capacity)
             safe_factor = 0
