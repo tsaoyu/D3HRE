@@ -2,12 +2,11 @@ import pytest
 
 import numpy as np
 
-
+from D3HRE import Task, MaritimeRobot
 from D3HRE.core.mission_utility import Mission
-from D3HRE.simulation import Task
 from PyResis import propulsion_power
 
-test_route =  np.array([[  10.69358 ,  -178.94713892], [  11.06430687, +176.90022735]])
+test_route =  np.array([[ 10.69358 , -178.94713892], [ 11.06430687, +176.90022735]])
 # -------------------------------------------------------------------------------------
 #  The route is the most basic concept in D3HRE. The route of a vehicle is defined as
 #  an array (numpy.ndarray) of coordinates. It can either from route planning software
@@ -85,12 +84,6 @@ config = {'load': {'prop_load': {'prop_eff': 0.7,
     'b3': 1.72,
     'b4': 1.08}}},
  'transducer': {'solar': {'azim': 0,
-   'eff': {'k_1': -0.017162,
-    'k_2': -0.040289,
-    'k_3': -0.004681,
-    'k_4': 0.000148,
-    'k_5': 0.000169,
-    'k_6': 5e-06},
    'pitch': 0.1,
    'roll': 0.1,
    'stationary': False,
@@ -105,7 +98,6 @@ config = {'load': {'prop_load': {'prop_eff': 0.7,
    'v_off': 45,
    'v_rate': 15}}}
 
+test_robot = MaritimeRobot(power_consumption_list, from_pyresis=test_ship, use_ocean_current=False)
 
-
-
-test_task = Task(test_mission, test_ship, power_consumption_list)
+test_task = Task(test_mission, test_robot)
