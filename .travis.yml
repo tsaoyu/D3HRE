@@ -2,6 +2,7 @@ language: python
 python:
  - "3.5"
  - "3.6"
+ - "3.7"
 before_install:
 - openssl aes-256-cbc -K $encrypted_555b1a8e5847_key -iv $encrypted_555b1a8e5847_iv
   -in ./tests/.d3hre.enc -out .d3hre -d
@@ -9,6 +10,9 @@ before_install:
 - mkdir ~/MERRA2/
 - cp ./tests/0d42588c08f99b9597ad878ae4b07202resource.pkl ~/MERRA2/
 - cp .d3hre ~/
-install: pip install -r requirements.txt
+install:
+- pip install -r requirements.txt
+- pip install -r add_requirement.txt
+- pip install --upgrade pytest
 script: pytest --cov=. ./tests/
 after_success: codecov
