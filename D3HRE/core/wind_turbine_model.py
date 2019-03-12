@@ -50,5 +50,5 @@ def resistance_power(resource_df, area):
     """
     A = area
     power_correction = 1 / 2 * A * 0.6 * resource_df.Va ** 2 * resource_df.relative_wind_cos * resource_df.speed
-    power_correction[power_correction <0] = 0
+    #power_correction[power_correction <0] = 0
     return power_correction

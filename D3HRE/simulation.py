@@ -301,7 +301,7 @@ class PowerSim():
         prop_load = self.Task.prop_load + wind_correction
         prop_load[prop_load < 0] = 0  # disable the wind driven generator mode
 
-        power_generation = (wind_raw * wind_area + self.solar_power_simulation * solar_area) * (1 - coupling_ratio)
+        power_generation = (wind_raw + self.solar_power_simulation * solar_area) * (1 - coupling_ratio)
         # Consider the coupling between wind and solar power generation
         demand_load = prop_load + self.Task.hotel_load
 
@@ -320,15 +320,16 @@ class PowerSim():
             )
 
             load_demand_history = np.vstack((demand_load, prop_load, self.Task.hotel_load.values,
-                                             (self.Task.critical_hotel_load + self.Task.critical_prop_load).values))
+                                             (self.Task.critical_hotel_load +
+                                              prop_load * self.Task.robot.critical_prop_load_ratio).values))
             load_demand_history_df = pd.DataFrame(
                 data=load_demand_history.T,
                 index=self.Task.mission.df.index,
                 columns=['Load_demand', 'Prop_load', 'Hotel_load', 'Critical_load'],
             )
-            generation_history = (self.solar * solar_area +self.wind * wind_area).values
+
             generation_history_df = pd.DataFrame(
-                data=generation_history.T,
+                data=generation,
                 index=self.Task.mission.df.index,
                 columns=['Generation']
             )

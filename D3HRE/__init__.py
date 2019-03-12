@@ -23,11 +23,16 @@ class Robot():
 
 class MaritimeRobot(Robot):
 
-    def __init__(self, power_consumption_list, from_pyresis=None, use_ocean_current=False):
+    def __init__(self, power_consumption_list, from_pyresis=None, use_ocean_current=False, config={}):
         self.power_consumption_list = power_consumption_list
         if from_pyresis is not None:
             self.set_from_PyResis(from_pyresis)
         self.use_ocean_current = use_ocean_current
+
+        if config != {}:
+            self.critical_prop_load_ratio = config['simulation']['critical_prop_load_ratio']
+        else:
+            self.critical_prop_load_ratio = 1
 
     def __repr__(self):
         return "I am a maritime robot. "
@@ -47,7 +52,7 @@ class MaritimeRobot(Robot):
         else:
             self.get_propulsion_load(current=False)
         self.get_hotel_load()
-        self.critical_prop_load = 1 * self.prop_load
+        self.critical_prop_load = self.critical_prop_load_ratio * self.prop_load
 
     def get_ocean_current(self):
         """
