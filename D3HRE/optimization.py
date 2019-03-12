@@ -70,7 +70,7 @@ class Multiple_objective_optimization_function(Mixed_objective_optimization_func
     def fitness(self, x):
         weight = self.weight
         capital_cost = x[0] * weight[0] + x[1] * weight[1] + x[2] * weight[2]
-        lpsp = self.reactive_sim.run(x[0], x[1], x[2])
+        lpsp = self.sim.run(x[0], x[1], x[2])
         return [capital_cost, lpsp]
 
     def get_nobj(self):
@@ -94,10 +94,10 @@ class Constraint_mixed_objective_optimisation(Mixed_objective_optimization_funct
             self.problem = pg.problem(
                 Mixed_objective_optimization_function(Task, self.config)
             )
+            self.sim = simulation.PowerSim(Task, config=self.config)
         else:
             self.problem = pg.problem(Mixed_objective_optimization_function(Task))
-
-        self.rea_sim = simulation.Reactive_simulation(self.Task, config=self.config)
+            self.sim = simulation.PowerSim(Task)
 
     def set_parameters(self):
         try:
@@ -162,7 +162,7 @@ class Constraint_mixed_objective_optimisation(Mixed_objective_optimization_funct
         :return: DataFrame on the
         """
         solar_area_opt, wind_area_opt, battery_capacity = self.champion
-        return self.sim.history(solar_area_opt, wind_area_opt, battery_capacity)
+        return self.sim.get_report(solar_area_opt, wind_area_opt, battery_capacity)
 
     def get_resource_df(self):
         return self.sim.resource_df
@@ -202,10 +202,11 @@ class Constraint_multiple_objective_optimisation(Multiple_objective_optimization
             self.problem = pg.problem(
                 Multiple_objective_optimization_function(Task, self.config)
             )
+            self.sim = simulation.PowerSim(Task, config=self.config)
         else:
             self.problem = pg.problem(Multiple_objective_optimization_function(Task))
+            self.sim = simulation.PowerSim(Task)
 
-        self.rea_sim = simulation.Reactive_simulation(self.Task, config=self.config)
 
     def set_parameters(self):
         try:
@@ -235,7 +236,6 @@ class Constraint_multiple_objective_optimisation(Multiple_objective_optimization
         pop = pg.population(self.problem, self.pop_size)
         pop = algo.evolve(pop)
         self.pop = pop
-        return pop
 
     def plot_non_dominated_fronts(self):
         return pg.plot_non_dominated_fronts(self.pop.get_f())

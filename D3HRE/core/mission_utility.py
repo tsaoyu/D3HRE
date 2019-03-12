@@ -222,29 +222,4 @@ class Mission:
 
 
 if __name__ == '__main__':
-    test_route = np.array(
-        [
-            [9.20628817, 171.58565184],
-            [9.48566359, 174.60574911],
-            [9.95078073, 176.68206597],
-            [10.69358, 178.94713892],
-            [11.06430687, -176.90022735],
-            [10.87900106, -172.27570342],
-            [9.95078073, -168.97247204],
-            [9.67178793, -166.89615517],
-            [8.92669178, -164.53670418],
-            [8.36686209, -163.12103359],
-            [7.61917834, -161.61098496],
-            [7.05755065, -160.66720457],
-            [6.30766145, -159.15715593],
-            [5.93230149, -158.1189975],
-            [-1.60710319, -156.04268063],
-        ]
-    )
-    test_mission = get_mission('2014-01-01', test_route, 2)
-    speed = np.linspace(2, 5, num=test_route.shape[0] - 1)
-    variable_speed_mission = get_mission('2014-01-01', test_route, 2)
-    print(test_mission.lon.min())
-    print(variable_speed_mission.tail())
-    print(hash_value(test_mission)[:7])
-    print(hash_value(test_route)[:7])
+   pass

@@ -270,7 +270,7 @@ class PowerSim():
         print("Start solar energy power simulation...")
         self.resource_df['global_horizontal'] = self.resource_df.SWGDN
         self.resource_df['diffuse_fraction'] = brl_model.location_run(self.resource_df)
-        self.resource_df['solar_power'] = pv.run_plant_model_location(
+        self.resource_df['solar_power_unit'] = pv.run_plant_model_location(
             self.resource_df,
             self.tilt,
             self.azim,
@@ -278,7 +278,7 @@ class PowerSim():
             self.capacity,
             config=self.config
         )
-        self.solar['solar_power'] = self.resource_df['solar_power']
+        self.solar['solar_power'] = self.resource_df['solar_power_unit']
         return self.solar['solar_power']
 
     def run(self, solar_area, wind_area, battery_capacity, validation=False):
@@ -319,9 +319,24 @@ class PowerSim():
                 columns=['SOC', 'Battery', 'Unmet', 'Waste', 'Supply'],
             )
 
+            load_demand_history = np.vstack((demand_load, prop_load, self.Task.hotel_load.values,
+                                             (self.Task.critical_hotel_load + self.Task.critical_prop_load).values))
+            load_demand_history_df = pd.DataFrame(
+                data=load_demand_history.T,
+                index=self.Task.mission.df.index,
+                columns=['Load_demand', 'Prop_load', 'Hotel_load', 'Critical_load'],
+            )
+            generation_history = (self.solar * solar_area +self.wind * wind_area).values
+            generation_history_df = pd.DataFrame(
+                data=generation_history.T,
+                index=self.Task.mission.df.index,
+                columns=['Generation']
+            )
             results = [self.resource_df,
                        self.solar * solar_area,
                        self.wind * wind_area,
+                       generation_history_df,
+                       load_demand_history_df,
                        battery_history_df]
             self.history = pd.concat(results, axis=1)
             return self.history
@@ -330,7 +345,7 @@ class PowerSim():
         return lost_power_supply_probability
 
     def get_report(self, solar_area, wind_area, battery_capacity):
-        self.run(solar_area, wind_area, battery_capacity, validation=True)
+        return self.run(solar_area, wind_area, battery_capacity, validation=True)
 
 if __name__ == '__main__':
     pass
