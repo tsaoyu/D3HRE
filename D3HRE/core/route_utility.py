@@ -35,4 +35,5 @@ def read_route_from_gpx(file):
         for point in route.points:
             route_list.append([point.latitude, point.longitude])
         all_routes.append(route_list)
-    return all_routes
+    print('Now I have changed')
+    return np.array(all_routes)
