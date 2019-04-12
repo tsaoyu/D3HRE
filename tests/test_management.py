@@ -90,7 +90,6 @@ def test_reactive_follow_management():
     env.simulation_result()
 
 
-
 def test_global_finite_horizon_optimal_management():
     management = Finite_horizon_optimal_management(resource.index, config=config)
     b3 = battery.copy()
@@ -110,3 +109,5 @@ def test_ewm_management():
 
 
 test_ewm_management()
+
+test_reactive_follow_management()

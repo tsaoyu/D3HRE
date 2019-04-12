@@ -318,10 +318,14 @@ class PowerSim():
                 index=self.Task.mission.df.index,
                 columns=['SOC', 'Battery', 'Unmet', 'Waste', 'Supply'],
             )
-
-            load_demand_history = np.vstack((demand_load, prop_load, self.Task.hotel_load.values,
+            try:
+                load_demand_history = np.vstack((demand_load, prop_load, self.Task.hotel_load.values,
                                              (self.Task.critical_hotel_load +
                                               prop_load * self.Task.robot.critical_prop_load_ratio).values))
+            except AttributeError:
+                load_demand_history = np.vstack((demand_load, prop_load, self.Task.hotel_load.values,
+                                             (self.Task.critical_hotel_load +
+                                              self.Task.critical_prop_load).values))
             load_demand_history_df = pd.DataFrame(
                 data=load_demand_history.T,
                 index=self.Task.mission.df.index,

@@ -6,7 +6,7 @@ from sklearn import preprocessing
 import visilibity as vis
 
 def construct_environment_demo(power_dataframe, battery_capacity):
-    aggregated_power = power_dataframe.cumsum().Power
+    aggregated_power = power_dataframe.cumsum()
     aggregated_power_lower = []
     aggregated_power_higher = []
     i = 0
@@ -322,7 +322,6 @@ class Dynamic_environment:
         else:
             return False
 
-
     def info(self):
         pass
 
@@ -373,23 +372,23 @@ class Dynamic_environment:
 
             power_in_period = self.resource[-remaining:]
             self.management.update(self.observation())
-            supply = self.management.manage()
+            plan = self.management.manage()
             for power in power_in_period:
-                _, reward, _, _ = self.step(supply, power)
+                _, reward, _, _ = self.step(plan, power)
                 self.total_reward += reward
 
         elif self.management.type == 'global':
             self.management.update(self.battery, self.resource)
-            supply = self.management.manage()
+            plan = self.management.manage()
             for power in self.resource:
-                _, reward, _, _ =self.step(supply[self.time_step], power)
+                _, reward, _, _ =self.step(plan[self.time_step], power)
                 self.total_reward += reward
 
         elif self.management.type == 'reactive':
             for power in self.resource:
                 self.management.update(self.observation(), self.resource_list[self.time_step])
-                supply = self.management.manage()
-                _, reward, _, _ = self.step(supply, power)
+                plan = self.management.manage()
+                _, reward, _, _ = self.step(plan, power)
                 self.total_reward += reward
         else:
             print('I don\'t know how to handle this type of management strategy!')

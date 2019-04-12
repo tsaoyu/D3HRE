@@ -71,10 +71,9 @@ def position_dataframe(start_date, way_points, speed):
     Generate position dataFrame at one hour resolution with given way points.
 
     :param start_date: pandas Timestamp in UTC
-    :param way_points: way points
+    :param way_points: np array way points
     :param speed: float or array speed in km/h
-        if it is an array then the size should be one smaller than way points
-    :return: pandas dataFrame with indexed position at one hour resolution
+    :return: pandas DataFrame with indexed position at one hour resolution
     """
     timeindex = journey_timestamp_generator(start_date, way_points, speed)
     latTS = pd.Series(way_points[:, 0], index=timeindex).resample('1H').mean()
@@ -139,7 +138,7 @@ def position_dataframe(start_date, way_points, speed):
         speedTS = pd.Series(speed, index=timeindex).resample('1H').mean()
 
     mission['speed'] = speedTS
-    mission.fillna(method='bfill', inplace=True)
+    mission.fillna(method='ffill', inplace=True)
 
     # Convert UTC time into local time
     def find_timezone(array, value):
@@ -163,15 +162,14 @@ def get_mission(start_time, route, speed):
     """
     Calculate position dataFrame at given start time, route and speed
 
-    :param start_time: str or Pandas Timestamp format YYYY-MM-DD assume 00:00
+    :param start_time: str or Pandas Timestamp, the str input should have format YYYY-MM-DD close the day
     :param route: numpy array shape (n,2)  list of way points formatted as [lat, lon]
     :param speed: int, float or (n) list, speed of platform unit in km/h
     :return: Pandas dataFrame
     """
     if type(start_time) == str:
         start_time = pd.Timestamp(start_time)
-    else:
-        pass
+
     position_df = full_day_cut(position_dataframe(start_time, route, speed))
     return position_df
 
@@ -197,17 +195,24 @@ def nearest_point(lat_lon):
 
 
 class Mission:
-    def __init__(self, start_time, route, speed):
-        self.start_time = start_time
-        self.route = route
-        self.speed = speed
-        self.df = get_mission(self.start_time, self.route, self.speed)
-        self.get_ID()
+    def __init__(self, start_time=None, route=None, speed=None):
+        if start_time is None or route is None or speed is None:
+            print('Please use custom mission setting.')
+        else:
+            self.start_time = start_time
+            self.route = route
+            self.speed = speed
+            self.df = get_mission(self.start_time, self.route, self.speed)
+            self.get_ID()
 
     def __str__(self):
         return "This mission {ID} is start from {a} at {b} UTC.".format(
             a=self.route[0], b=self.start_time, ID=self.ID
         )
+
+    def custom_set(self, mission_df, ID):
+        self.df = mission_df
+        self.ID = ID
 
     def get_ID(self):
         route_tuple = tuple(self.route.flatten().tolist())
@@ -218,7 +223,7 @@ class Mission:
 
         ID_tuple = (self.start_time, route_tuple, speed_tuple)
         self.ID = hash_value(ID_tuple)
-        pass
+        return self.ID
 
 
 if __name__ == '__main__':
