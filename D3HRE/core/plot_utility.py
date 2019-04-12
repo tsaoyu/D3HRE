@@ -106,17 +106,41 @@ def wind_dashboard(history):
 def plot_supply_SOC_and_unmet(result, save_name=None, y_lim=None):
     fig, (ax, ax2) =  plt.subplots(2,1, figsize=(10,3), gridspec_kw={'height_ratios':[10,1]}, sharex=True)
     ax1 = ax.twinx()
-    result.SOC.resample('24H').mean().plot(color='g', ax=ax1, label='SOC')
+    result.SOC.resample('24H').mean().plot(color='r', ax=ax1, label='SOC')
     ax1.legend(loc='upper right')
     ax1.set_ylabel('State of charge (SOC)')
     if y_lim is not None:
         ax.set_ylim(y_lim)
     result.Unmet.plot(ax=ax2, color='r')
     ax2.set_ylim(bottom=0)
-    ax2.set_ylabel('Unmet')
-    (result.solar_power + result.wind_power).resample('24H').mean().plot(ax=ax, label='Generation')
+    ax2.set_ylabel('Unmet $(W)$')
     result.Generation.resample('24H').mean().plot(ax=ax, label='Generation')
+    result.Supply.resample('24H').mean().plot(ax=ax, label='Supply')
     ax.legend(loc='upper left')
-    ax.set_ylabel('Power generation $(W)$')
+    ax.set_ylabel('Power generation and supply $(W)$')
     if save_name is not None:
         fig.savefig(save_name)
+
+def plot_prop_load(history, optimisation=None, save_name=None):
+    fig, ax = plt.subplots(figsize=(10,3))
+    history.Prop_load.plot(ax=ax, color='black', label='Proplusion load with wind discount')
+    if optimisation is not None:
+        optimisation.Task.robot.prop_load.plot(ax=ax, color='red', style='--', label='Proplusion load w/o wind discount')
+    ax.set_ylabel('Propulsiton load (W)')
+    ax.legend()
+    if save_name is not None:
+        fig.savefig(save_name)
+
+
+def plot_ocean_current_and_speed(optimisation, save_name=None):
+    fig, ax = plt.subplots(figsize=(10,3))
+    optimisation.Task.robot.ocean_current_df.Vs.plot(ax=ax,color = 'black',  label='Robot speed')
+    (optimisation.Task.robot.ocean_current_df.current_u ** 2 +
+    optimisation.Task.robot.ocean_current_df.current_v ** 2).pipe(np.sqrt).plot(ax=ax,
+                                                                                color='black', style='--',label='Current speed')
+    ax.legend()
+    ax.set_ylabel('Speed (m/s)')
+    if save_name is not None:
+        fig.savefig(save_name)
+
+
