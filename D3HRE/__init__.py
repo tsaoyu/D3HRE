@@ -1,7 +1,9 @@
 __author__ = 'Yu Cao'
+
 from D3HRE.core.hotel_load_model import HotelLoad
 from D3HRE.core.navigation_utility import ocean_current_processing
-from D3HRE.core.mission_utility import Mission
+from D3HRE.core.get_hash import hash_value
+from D3HRE.core.mission_utility import get_mission
 
 import pandas as pd
 
@@ -20,6 +22,7 @@ class Robot():
 
     def estimate_demand_load(self, mission):
         pass
+
 
 class MaritimeRobot(Robot):
 
@@ -132,10 +135,54 @@ class Task:
 
 
 class Mission:
+    def __init__(self, start_time, route, speed):
+        self.start_time = start_time
+        self.route = route
+        self.speed = speed
+        self.df = get_mission(self.start_time, self.route, self.speed)
+        self.get_ID()
 
-    def __init__(self):
-        pass
+    def __str__(self):
+        return "This mission {ID} is start from {a} at {b} UTC.".format(
+            a=self.route[0], b=self.start_time, ID=self.ID
+        )
 
+    def get_ID(self):
+        route_tuple = tuple(self.route.flatten().tolist())
+        if isinstance(self.speed, list):
+            speed_tuple = tuple(self.speed)
+        else:
+            speed_tuple = self.speed
+
+        ID_tuple = (self.start_time, route_tuple, speed_tuple)
+        self.ID = hash_value(ID_tuple)
+        return self.ID
+
+
+
+
+class Task:
+    """
+    Task is a high level object that contains the mission and the robot object.
+    """
+    def __init__(self, mission, robot):
+        """
+
+        :param mission: Object mission object
+        :param robot: Object robot object
+        :param power_consumption_list: optional the list of demand load, only use in legacy mode
+        """
+        self.mission = mission
+        self.robot = robot
+        self.estimate_demand_load()
+
+
+    def estimate_demand_load(self):
+        self.hotel_load = self.robot.hotel_load
+        self.prop_load = self.robot.prop_load
+        self.critical_hotel_load = self.robot.critical_hotel_load
+        self.critical_prop_load = self.robot.critical_prop_load
+        self.load_demand = self.hotel_load + self.prop_load
 
 
 
