@@ -1,5 +1,5 @@
 import gpxpy
-
+import numpy as np
 
 def read_route_from_gpx(file):
     """
@@ -16,4 +16,4 @@ def read_route_from_gpx(file):
         for point in route.points:
             route_list.append([point.latitude, point.longitude])
         all_routes.append(route_list)
-    return all_routes
+    return  np.array(all_routes)
