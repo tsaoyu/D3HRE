@@ -5,7 +5,11 @@ from D3HRE.core.navigation_utility import calculate_initial_compass_bearing
 
 
 class SolarSystem():
+    """
+    A solar system that estimate the zenith angle for arbitary point on the earth.
 
+
+    """
     def __init__(self):
         sun = ephem.Sun()
         self.sun = sun
@@ -21,22 +25,47 @@ class SolarSystem():
         self.lat, self.lon = lat, lon
 
     def move_observer(self, delta_lat, delta_lon):
+        """
+
+        :param delta_lat: difference in latitude
+        :param delta_lon: difference in longitude
+        :return:
+        """
         self.obs.lat = (float(self.obs.lat) - delta_lat)
         self.obs.lon = (float(self.obs.lon) - delta_lon)
         # print(self.obs.lat, self.obs.lon)
         return [math.degrees(self.obs.lat), math.degrees(self.obs.lon)]
 
     def get_solar_angle(self):
+        """
+
+        :return: solar angle
+        """
+
         self.sun.compute(self.obs)
         return [self.sun.az, self.sun.alt]
 
     def get_zenith_cosine(self):
+        """
+
+        :return: zenith angle
+        """
+
         self.sun.compute(self.obs)
         return math.sin(self.sun.alt)
 
 
 
 def calculate_zenith_cosine(time, lat, lon, min_zenith_cosine=0.065):
+    """
+    Wrapper on the solar system.
+
+    :param time: UTC time
+    :param lat: latitude
+    :param lon: longitude
+    :param min_zenith_cosine: minimal zenith angle
+    :return: cosine on the zenith angle
+    """
     solar_system = SolarSystem()
     solar_system.add_observer(str(lat), str(lon))
     solar_system.set_date(time)

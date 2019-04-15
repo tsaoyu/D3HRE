@@ -8,6 +8,10 @@ from D3HRE.core.mission_utility import get_mission
 import pandas as pd
 
 class Robot():
+    """
+    Robot base object.
+
+    """
     def __init__(self):
         pass
 
@@ -135,19 +139,46 @@ class Task:
 
 
 class Mission:
-    def __init__(self, start_time, route, speed):
-        self.start_time = start_time
-        self.route = route
-        self.speed = speed
-        self.df = get_mission(self.start_time, self.route, self.speed)
-        self.get_ID()
+    """
+    Mission is one of the high level object contains the spatial temporal information for the journey.
+    """
+    def __init__(self, start_time=None, route=None, speed=None):
+        """
+        A mission contains an UTC indexed dataframe on the location and local time of the moving platform.
+        The mission can be defined during initialisation by passing all following arguments.
+        If any of these argument is missing, the mission dataframe have to be defined manually.
+
+        :param start_time: str or Pandas Timestamp, str shall have format YYYY-MM-DD to the closest the day
+        :param route: numpy array with shape (n,2), list of way points formatted as [lat, lon]
+        :param speed:  int, float or a list, speed of moving platform unit in km/h
+        """
+        if start_time is None or route is None or speed is None:
+            print('Please use custom mission setting.')
+        else:
+            self.start_time = start_time
+            self.route = route
+            self.speed = speed
+            self.df = get_mission(self.start_time, self.route, self.speed)
+            self.get_ID()
 
     def __str__(self):
-        return "This mission {ID} is start from {a} at {b} UTC.".format(
-            a=self.route[0], b=self.start_time, ID=self.ID
-        )
+        return "This mission {ID} .".format( ID=self.ID)
+
+    def custom_set(self, mission_df, ID):
+        """
+
+        :param mission_df: UTC indexed pandas dataFrame, with columns in latitude, longitude and local_time
+        :param ID: str, a unique identifier for the mission
+        :return:
+        """
+        self.df = mission_df
+        self.ID = ID
 
     def get_ID(self):
+        """
+
+        :return: hash value on the mission
+        """
         route_tuple = tuple(self.route.flatten().tolist())
         if isinstance(self.speed, list):
             speed_tuple = tuple(self.speed)
@@ -167,10 +198,11 @@ class Task:
     """
     def __init__(self, mission, robot):
         """
+        The task holds a robot for one mission.
+        It shall have at least one estimate_demand_load method.
 
-        :param mission: Object mission object
-        :param robot: Object robot object
-        :param power_consumption_list: optional the list of demand load, only use in legacy mode
+        :param mission: Object, mission object
+        :param robot: Object, robot object
         """
         self.mission = mission
         self.robot = robot

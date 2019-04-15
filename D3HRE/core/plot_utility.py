@@ -117,7 +117,7 @@ def plot_supply_SOC_and_unmet(result, save_name=None, y_lim=None):
     result.Generation.resample('24H').mean().plot(ax=ax, label='Generation')
     result.Supply.resample('24H').mean().plot(ax=ax, label='Supply')
     ax.legend(loc='upper left')
-    ax.set_ylabel('Power generation and supply $(W)$')
+    ax.set_ylabel('Power $(W)$')
     if save_name is not None:
         fig.savefig(save_name)
 

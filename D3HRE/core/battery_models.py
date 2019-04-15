@@ -3,11 +3,12 @@ import numpy as np
 
 def min_max_model(power, use, battery_capacity):
     """
-    Minimal maximum battery model
-    :param power: Pandas TimeSeries of total power from renewable system
-    :param use: float unit W fixed load of the power system
-    :param battery_capacity: float unit Wh battery capacity
-    :return: list energy history in battery
+    Minimal maximum battery model, obsoleted
+
+    :param power: Pandas TimeSeries, total power from renewable system
+    :param use: float, unit W fixed load of the power system
+    :param battery_capacity: float, unit Wh battery capacity
+    :return: list, energy history in battery
     """
     power = power.tolist()
     energy = 0
@@ -29,7 +30,7 @@ def soc_model_fixed_load(
     discharge_eff=0.8,
 ):
     """
-    Battery state of charge model with fixed load.
+    Battery state of charge model with fixed load. (Obsolete)
 
     :param power: Pandas TimeSeries of total power from renewable system
     :param use: float unit W fixed load of the power system
@@ -88,12 +89,30 @@ def soc_model_fixed_load(
 
 
 class Battery:
+    """
+    A simple finite state based energy flow battery model.
+
+    """
     def __init__(self, capacity, config={}):
+        """
+        Initialise the battery with a given capacity and configuration.
+
+        :param capacity: float, unit Wh
+        :param config: options including DOD, depth of discharge; sigma, self-discharge rate; eta_in, charge efficiency;
+        eta_out, discharge efficiency; init_charge, percentage of the battery pre-charge; where all values shall between 0
+        and 1
+        """
         self.capacity = capacity
         self.config = config
         self.set_parameters()
 
     def set_parameters(self):
+        """
+        Setup the parameters using the config file, options including DOD, depth of discharge; sigma, self-discharge rate;
+        eta_in, charge efficiency; eta_out, discharge efficiency; init_charge, percentage of the battery pre-charge;
+        where all values shall between 0 and 1.
+
+        """
         try:
             self.depth_of_discharge = self.config['simulation']['battery']['DOD']
             self.discharge_rate = self.config['simulation']['battery']['sigma']
@@ -110,7 +129,13 @@ class Battery:
             self.init_charge = 1
 
     def run(self, power, use):
+        """
+        Run the battery model with a list of power generation and usage.
 
+        :param power: list, power generation unit in W
+        :param use: list, power usage unit in W
+        :return: None
+        """
         DOD = self.depth_of_discharge
         battery_capacity = self.capacity
         discharge_rate = self.discharge_rate
@@ -163,6 +188,11 @@ class Battery:
         self.use_history = use_history
 
     def battery_history(self):
+        """
+        Return the history of the battery.
+
+        :return: np array, the SOC, energy in the battery, unmet power supply, wasted power and the supplied power unit in W
+        """
         history = np.vstack(
             (
                 np.array(self.SOC),
@@ -175,6 +205,11 @@ class Battery:
         return history
 
     def lost_power_supply_probability(self):
+        """
+        Return the lost power supply probability (LPSP) using the battery history.
+
+        :return: float, LPSP
+        """
         LPSP = 1 - self.unmet_history.count(0) / len(self.energy_history)
         return LPSP
 
@@ -182,7 +217,19 @@ class Battery:
 
 
 class Battery_managed:
+    """
+    Battery managed is a the basic class for the demand load controllable battery model.
+
+    """
     def __init__(self, capacity, config={}):
+        """
+
+        :param capacity: float, unit Wh
+        :param config: options including DOD, depth of discharge; sigma, self-discharge rate; eta_in, charge efficiency;
+        eta_out, discharge efficiency; init_charge, percentage of the battery pre-charge; where all values shall between 0
+        and 1
+        """
+
         self.capacity = capacity
         self.config = config
         self.set_parameters()
@@ -192,6 +239,13 @@ class Battery_managed:
         self.states_list = []
 
     def set_parameters(self):
+        """
+        Setup the parameters using the config file, options including DOD, depth of discharge; sigma, self-discharge rate;
+         eta_in, charge efficiency; eta_out, discharge efficiency; init_charge, percentage of the battery pre-charge;
+        where all values shall between 0 and 1.
+
+
+        """
         try:
             self.depth_of_discharge = self.config['simulation']['battery']['DOD']
             self.discharge_rate = self.config['simulation']['battery']['sigma']
@@ -211,6 +265,11 @@ class Battery_managed:
 
 
     def reset(self):
+        """
+        Reset the battery state to the start of simulation.
+
+        :return:
+        """
         self.init_history()
         self.init_simulation()
 
@@ -226,7 +285,15 @@ class Battery_managed:
         self.SOC = []
 
     def step(self, plan, generated, gym = False):
+        """
+        Run the finite state battery model on one time step.
 
+
+        :param plan: float, planned power usage in W
+        :param generated: float, power generation unit in W
+        :param gym: optional, set True to using in OpenAI gym mode
+        :return: float, the supplied power in W
+        """
         if gym == True:
             plan = plan[0][0]
 
@@ -290,6 +357,11 @@ class Battery_managed:
         return self.supply
         
     def history(self):
+        """
+        Get the history of the managed battery.
+
+        :return: np array including the history of the battery: SOC, battery energy, unmet and wasted energy, supplied power
+        """
         battery_history = np.vstack(
             (
                 np.array(self.SOC),
@@ -302,6 +374,11 @@ class Battery_managed:
         return battery_history
 
     def observation(self):
+        """
+        Observation
+
+        :return:
+        """
         battery_state = {
             'current_energy': self.energy,
             'usable_capacity': self.DOD * self.capacity,
@@ -309,20 +386,41 @@ class Battery_managed:
         return battery_state
 
     def story_board(self):
+        """
+        For the use of explainable AI in power management system.
+
+        :return: the status of battery
+        """
+
         return self.status
 
     def lost_power_supply_probability(self):
+        """
+        Get the lost power supply probability of the managed battery after run.
+
+        :return: float, LPSP
+        """
+
+
         LPSP = 1 - self.unmet_history.count(0) / len(self.SOC)
         return LPSP
 
     def copy(self):
+        """
+        Make a copy of battery model.
+
+        :return: Copied version of battery with same capacity and configuration
+        """
         return Battery_managed(self.capacity, self.config)
 
-    def deepcopy(self, memodict={}):
-        pass
 
 
 class Soc_model_variable_load:
+    """
+    Obsolete basic class.
+
+
+    """
     def __init__(self, battery, power, load):
         self.battery = battery
         self.battery.run(power, load)

@@ -53,9 +53,9 @@ class Reactive_simulation():
         self.resource_df = resource_df_download_and_process(self.Task.mission)
         self.df = self.Task.mission.df
         self.config = config
-        self.set_parameter()
+        self.set_parameters()
 
-    def set_parameter(self):
+    def set_parameters(self):
         try:
             self.power_coefficient = self.config['transducer']['wind']['power_coef']
             self.cut_in_speed = self.config['transducer']['wind']['v_in']
@@ -223,10 +223,10 @@ class PowerSim():
     def __init__(self, Task, config={}):
         self.Task = Task
         self.config = config
-        self.set_parameter()
+        self.set_parameters()
         self.resource_df = resource_df_download_and_process(self.Task.mission)
 
-    def set_parameter(self):
+    def set_parameters(self):
         try:
             self.power_coefficient = self.config['transducer']['wind']['power_coef']
             self.cut_in_speed = self.config['transducer']['wind']['v_in']

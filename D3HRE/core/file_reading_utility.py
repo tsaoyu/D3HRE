@@ -6,7 +6,7 @@ def read_route_from_gpx(file):
     Read route from gpx file
 
     :param file: str, path to the .gpx file
-    :return: list, all routes
+    :return: numpy array, contains all routes
     """
     gpx_file = open(file)
     gpx = gpxpy.parse(gpx_file)

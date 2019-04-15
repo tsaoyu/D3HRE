@@ -13,6 +13,13 @@ OSCAR_DIR = config['OSCAR']['Datadir']
 
 
 def calculate_initial_compass_bearing(pointA, pointB):
+    """
+    Calculate the compass bearing of the mvoing platform on point A and B.
+
+    :param pointA: tuple or list in the format of [lat, lon]
+    :param pointB: tuple or list in the format of [lat, lon]
+    :return: float degrees compass bearing between A and B
+    """
     if (type(pointA) != tuple) or (type(pointB) != tuple):
         raise TypeError("Only tuples are supported as arguments")
     lat1 = math.radians(pointA[0])
@@ -33,7 +40,15 @@ def calculate_initial_compass_bearing(pointA, pointB):
 
 
 def ocean_current_processing(mission_df, file_dir=OSCAR_DIR):
+    """
 
+    Ocean data processing utility.
+
+
+    :param mission_df: padas dataFrame, contains UTC indexed sptial-temporal information
+    :param file_dir: str, direcotry of the OSCAR ocean current file
+    :return: pandas dataFrame, unit in m/s the speed of the ocean current and the moving platform
+    """
     dataframe = mission_df.copy()
     location_list = [tuple(x) for x in dataframe[['lat', 'lon']].values]
 

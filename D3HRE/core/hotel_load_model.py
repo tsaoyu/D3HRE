@@ -30,7 +30,13 @@ class HotelLoad:
         self.components = list(self.power_consumption_list.keys())
 
     def component_power_consumption(self, component, performance_level):
+        """
+        Generate power comcumption for one component at given performance level.
 
+        :param component: key,
+        :param performance_level:
+        :return:
+        """
         power_consumption = self.power_consumption_list[component]
 
         if len(power_consumption['power']) == 1:

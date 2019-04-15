@@ -37,8 +37,6 @@ except KeyError:
 # 3. From user input
 
 
-
-
 def generate_single_download_link(start, end, lat_lon, data_set=None):
     """
     Generate download URL at a period with given latitude and longitude.
@@ -203,6 +201,7 @@ def resource_df_download(
 
 
     :type mission: object
+    :type username: str
     :param mission: Mission object
     :param username: username of NASA earthdata portal
     :param password: password of NASA earthdata portal
