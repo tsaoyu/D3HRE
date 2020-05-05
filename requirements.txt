@@ -13,8 +13,9 @@ tqdm
 ephem
 seaborn
 gpxpy
-pygmo==2.6
+pygmo
 nvector
+geographiclib
 
 cloudpickle
 ruamel.yaml
