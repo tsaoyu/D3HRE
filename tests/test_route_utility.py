@@ -1,7 +1,7 @@
 import os
 import pytest
 from D3HRE.core.route_utility import *
-
+from D3HRE.core.file_reading_utility import read_route_from_gpx
 
 opencpn_XML='-69.4565,20.7236,0. -68.3182,21.8401,0. '
 
