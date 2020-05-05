@@ -1,5 +1,102 @@
 __author__ = 'Yu Cao'
 
+import os
+
+def setup():
+    from distutils.util import strtobool
+    print("This is an interactive setup tool for Dynamic Data Driven Hybrid Renewable Energy (D3HRE).")
+    print("I will help you to configuration your system for the future use. ")
+    print("================================================================ ")
+    
+
+
+    def ask_data_directory(download=True):
+
+        data_directory = input("Where do you want to store you resource file? Enter to use current folder.")
+        with open(os.path.expanduser('~/.d3hre'), "a") as f:
+            if data_directory == '':
+                f.write("[MERRA2]\nDatadir = {}\n".format(os.getcwd()))
+            else:
+                f.write("[MERRA2]\nDatadir = {}\n".format(data_directory))
+        if download == True:
+            connections = input("How many connections you want to download at the same time. "
+                                "Too much connections may cause ban on IP. (Enter to use default value 4.) ")
+            with open(os.path.expanduser('~/.d3hre'), "a") as f:
+                if connections == '':
+                    f.write("Connections = 4\n")
+                else:
+                    f.write("Connections = {}\n".format(connections))
+
+
+    def ask_need_store_password():
+
+        need_store_password = input("Do you want D3HRE store your credential for you? (Y/N) ")
+        while strtobool(need_download) not in [True, False]:
+            need_store_password = input("Please enter 'y/n' for either yes or no")
+
+        if strtobool(need_store_password):
+            import getpass
+            account = input("Please enter your account: ")
+            password = getpass.getpass("Please enter your password: ")
+            with open(os.path.expanduser('~/.d3hre'), "a") as f:
+                f.write("Username = {}\nPassword = {}\n".format(account, password))
+
+        elif strtobool(need_store_password) == False:
+            print(
+                "Don't worry. You can still store your credential as environment variables or enter them when necessary.")
+
+    def ask_oscar_directory(use_current=True):
+
+        downloaded = input("Have you downloaded OSCAR data? (Y/N) ")
+        while strtobool(need_download) not in [True, False]:
+            downloaded = input("Please enter 'y/n' for either yes or no")
+
+        if strtobool(downloaded):
+            data_directory = input("Where did you save the data?  Type full path or hit enter if under current folder. ")
+
+            if data_directory == '':
+                with open(os.path.expanduser('~/.d3hre'), "a") as f:
+                    f.write("[OSCAR]\nDatadir = {}\n".format(os.getcwd()))
+            else:
+                with open(os.path.expanduser('~/.d3hre'), "a") as f:
+                    f.write("[OSCAR]\nDatadir = {}\n".format(data_directory)) 
+        else:
+
+            print("Please refer to the wiki page if you\'d like to use ocean current data in the future. ")
+
+
+    need_download = input("Do you want D3HRE automatically download the weather reanalysis data for the simulation ? (Y/N) ")
+
+
+    while strtobool(need_download) not in [True, False]:
+        need_download = input("Please enter 'y/n' for either yes or no")
+
+    if strtobool(need_download):
+        ask_data_directory(download=True)
+        ask_need_store_password()
+
+    elif strtobool(need_download) == False:
+        print("Please refer to the wiki page for the data preparation.")
+        ask_data_directory(download=False)
+
+    use_ocean_current = input("Do you want to use ocean current data to correct speed of maritime robots? (Y/N)")
+    while strtobool(use_ocean_current) not in [True, False]:
+        use_ocean_current = input("Please enter 'y/n' for either yes or no")
+
+
+    if strtobool(use_ocean_current):
+        ask_oscar_directory()
+    
+
+
+
+    print("Setup is done. Enjoy your time with D3HRE!")
+    print("================================================================ ")
+
+
+if not os.path.exists(os.path.expanduser('~/.d3hre')):
+    setup()
+
 from D3HRE.core.hotel_load_model import HotelLoad
 from D3HRE.core.navigation_utility import ocean_current_processing
 from D3HRE.core.get_hash import hash_value
@@ -40,6 +137,8 @@ class MaritimeRobot(Robot):
             self.critical_prop_load_ratio = config['simulation']['critical_prop_load_ratio']
         else:
             self.critical_prop_load_ratio = 1
+        self.critical_hotel_load = 0
+        self.critical_prop_load = 0
 
     def __repr__(self):
         return "I am a maritime robot. "
@@ -117,7 +216,7 @@ class Task:
         """
 
         :param mission: object should have df attribute that contains information on
-        :param vehicle: object should have prop_power() method that return
+        :param robot: object should have prop_power() method that return
         propulsion power of the vehicle
         :param power_consumption_list: dictionary consist of components with power
         requirements and duty cycle
@@ -127,14 +226,12 @@ class Task:
         self.power_consumption_list = power_consumption_list
         self.estimate_demand_load()
 
-
     def estimate_demand_load(self):
         self.robot.estimate_demand_load(self.mission)
         self.hotel_load = self.robot.hotel_load
         self.prop_load = self.robot.prop_load
         self.critical_hotel_load = self.robot.critical_hotel_load
         self.critical_prop_load = self.robot.critical_prop_load
-
         self.load_demand = self.hotel_load + self.prop_load
 
 
@@ -192,88 +289,31 @@ class Mission:
 
 
 
-class Task:
-    """
-    Task is a high level object that contains the mission and the robot object.
-    """
-    def __init__(self, mission, robot):
-        """
-        The task holds a robot for one mission.
-        It shall have at least one estimate_demand_load method.
+# class Task:
+#     """
+#     Task is a high level object that contains the mission and the robot object.
+#     """
+#     def __init__(self, mission, robot):
+#         """
+#         The task holds a robot for one mission.
+#         It shall have at least one estimate_demand_load method.
 
-        :param mission: Object, mission object
-        :param robot: Object, robot object
-        """
-        self.mission = mission
-        self.robot = robot
-        self.estimate_demand_load()
-
-
-    def estimate_demand_load(self):
-        self.hotel_load = self.robot.hotel_load
-        self.prop_load = self.robot.prop_load
-        self.critical_hotel_load = self.robot.critical_hotel_load
-        self.critical_prop_load = self.robot.critical_prop_load
-        self.load_demand = self.hotel_load + self.prop_load
+#         :param mission: Object, mission object
+#         :param robot: Object, robot object
+#         """
+#         self.mission = mission
+#         self.robot = robot
+#         self.estimate_demand_load()
 
 
-
-def setup():
-    from distutils.util import strtobool
-    print("This is an interactive setup tool for Dynamic Data Driven Hybrid Renewable Energy (D3HRE).")
-    print("I will help you to configuration your system for the future use. ")
-    print("================================================================ ")
-    import os
-
-
-    def ask_data_directory(download=True):
-
-        data_directory = input("Where do you want to store you resource file? Enter to use current folder.")
-        with open(os.path.expanduser('~/.d3hre'), "a") as f:
-            if data_directory == '':
-                f.write("[MERRA2]\nDatadir = {}\n".format(os.getcwd()))
-            else:
-                f.write("[MERRA2]\nDatadir = {}\n".format(data_directory))
-        if download == True:
-            connections = input("How many connections you want to download at the same time. "
-                                "Too much connections may cause ban on IP. Enter to use default value 8.")
-            with open(os.path.expanduser('~/.d3hre'), "a") as f:
-                if connections == '':
-                    f.write("Connections = 8\n")
-                else:
-                    f.write("Connections = {}\n".format(connections))
+#     def estimate_demand_load(self):
+#         self.hotel_load = self.robot.hotel_load
+#         self.prop_load = self.robot.prop_load
+#         self.critical_hotel_load = self.robot.critical_hotel_load
+#         self.critical_prop_load = self.robot.critical_prop_load
+#         self.load_demand = self.hotel_load + self.prop_load
 
 
-    def ask_need_store_password():
-
-        need_store_password = input("Do you want D3HRE store your credential for you? (Y/N)")
-        while strtobool(need_download) not in [True, False]:
-            need_store_password = input("Please enter 'y/n' for either yes or no")
-
-        if strtobool(need_store_password):
-            import getpass
-            account = input("Please enter your account:")
-            password = getpass.getpass("Please enter your password:")
-            with open(os.path.expanduser('~/.d3hre'), "a") as f:
-                f.write("Username = {}\nPassword = {}\n".format(account, password))
-
-        elif strtobool(need_store_password) == False:
-            print(
-                "Don't worry. You can still store your credential as environment variables or enter them when necessary.")
-
-    need_download = input("Do you want D3HRE download the weather reanalysis data for the simulation ? (Y/N)")
-    while strtobool(need_download) not in [True, False]:
-        need_download = input("Please enter 'y/n' for either yes or no")
-
-    if strtobool(need_download):
-        ask_data_directory(download=True)
-        ask_need_store_password()
-
-    elif strtobool(need_download) == False:
-        print("Please refer to the wiki page for the data preparation.")
-        ask_data_directory(download=False)
 
 
-    print("Setup is done. Enjoy your time with D3HRE!")
-    print("================================================================ ")
 
